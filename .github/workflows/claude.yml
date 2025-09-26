@@ -1,0 +1,46 @@
+name: Claude Code
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  pull_request_review_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: 'Prompt for Claude'
+        required: true
+        type: string
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
+            ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
+            ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
+            ${{ github.event_name == 'pull_request' && github.event.pull_request.body || '' }}
+            ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
+          max_iterations: 10
+          model: claude-3-5-sonnet-20241022

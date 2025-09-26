@@ -18,7 +18,7 @@ class ApiClient {
         },
       });
 
-      const data = await response.json();
+      const data = await response.json() as T;
       return {
         data,
         status: response.status,
