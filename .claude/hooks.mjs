@@ -18,81 +18,111 @@ const logEnforcement = (action, details) => {
 };
 
 // Check if a directory contains code files
-const isCodeDirectory = (dirPath) => {
-  if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
-    return false;
-  }
+const isCodeDirectory = (dirPath, depth = 0, maxDepth = 5) => {
+  try {
+    if (!fs.existsSync(dirPath) || !fs.statSync(dirPath).isDirectory()) {
+      return false;
+    }
 
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.json'];
+    // Prevent infinite recursion
+    if (depth > maxDepth) {
+      return false;
+    }
 
-  for (const entry of entries) {
-    if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (codeExtensions.includes(ext) && !entry.name.startsWith('.')) {
-        return true;
-      }
-    } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
-      // Recursively check subdirectories
-      if (isCodeDirectory(path.join(dirPath, entry.name))) {
-        return true;
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.json'];
+
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (codeExtensions.includes(ext) && !entry.name.startsWith('.')) {
+          return true;
+        }
+      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+        // Recursively check subdirectories with depth limit
+        if (isCodeDirectory(path.join(dirPath, entry.name), depth + 1, maxDepth)) {
+          return true;
+        }
       }
     }
-  }
 
-  return false;
+    return false;
+  } catch (error) {
+    logEnforcement('error', {
+      function: 'isCodeDirectory',
+      path: dirPath,
+      error: error.message
+    });
+    return false;
+  }
 };
 
 // Validate BRIEF.md structure
 const validateBriefStructure = (content) => {
-  const errors = [];
+  try {
+    const errors = [];
 
-  // Check for required sections
-  if (!content.includes('#')) {
-    errors.push('BRIEF.md must have at least one heading');
+    // Check for required sections
+    if (!content.includes('#')) {
+      errors.push('BRIEF.md must have at least one heading');
+    }
+
+    // Check minimum length (should be brief but meaningful)
+    if (content.trim().length < 50) {
+      errors.push('BRIEF.md must contain meaningful content (at least 50 characters)');
+    }
+
+    // Check for descriptive content
+    const lines = content.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length < 3) {
+      errors.push('BRIEF.md must have at least 3 non-empty lines');
+    }
+
+    return errors;
+  } catch (error) {
+    logEnforcement('error', {
+      function: 'validateBriefStructure',
+      error: error.message
+    });
+    return ['Error validating BRIEF.md structure'];
   }
-
-  // Check minimum length (should be brief but meaningful)
-  if (content.trim().length < 50) {
-    errors.push('BRIEF.md must contain meaningful content (at least 50 characters)');
-  }
-
-  // Check for descriptive content
-  const lines = content.split('\n').filter(line => line.trim().length > 0);
-  if (lines.length < 3) {
-    errors.push('BRIEF.md must have at least 3 non-empty lines');
-  }
-
-  return errors;
 };
 
 // Validate CLAUDE.md structure
 const validateClaudeStructure = (content) => {
-  const errors = [];
-  const requiredSections = [
-    '## Purpose',
-    '## Dependencies',
-    '## Key Files',
-    '## Conventions'
-  ];
+  try {
+    const errors = [];
+    const requiredSections = [
+      '## Purpose',
+      '## Dependencies',
+      '## Key Files',
+      '## Conventions'
+    ];
 
-  for (const section of requiredSections) {
-    if (!content.includes(section)) {
-      errors.push(`CLAUDE.md missing required section: ${section}`);
+    for (const section of requiredSections) {
+      if (!content.includes(section)) {
+        errors.push(`CLAUDE.md missing required section: ${section}`);
+      }
     }
-  }
 
-  // Check minimum content length
-  if (content.trim().length < 500) {
-    errors.push('CLAUDE.md must be comprehensive (at least 500 characters)');
-  }
+    // Check minimum content length
+    if (content.trim().length < 500) {
+      errors.push('CLAUDE.md must be comprehensive (at least 500 characters)');
+    }
 
-  // Check for proper markdown structure
-  if (!content.includes('# ')) {
-    errors.push('CLAUDE.md must have a main heading');
-  }
+    // Check for proper markdown structure
+    if (!content.includes('# ')) {
+      errors.push('CLAUDE.md must have a main heading');
+    }
 
-  return errors;
+    return errors;
+  } catch (error) {
+    logEnforcement('error', {
+      function: 'validateClaudeStructure',
+      error: error.message
+    });
+    return ['Error validating CLAUDE.md structure'];
+  }
 };
 
 /**
@@ -100,44 +130,52 @@ const validateClaudeStructure = (content) => {
  * Prevents directory creation without BRIEF.md
  */
 export const preDirectoryCreate = async (context) => {
-  const { targetPath, operation } = context;
+  try {
+    const { targetPath, operation } = context;
 
-  // Skip validation for special directories
-  const skipPatterns = [
-    'node_modules',
-    '.git',
-    '.claude',
-    'dist',
-    'build',
-    '.next',
-    '.turbo',
-    'coverage'
-  ];
+    // Skip validation for special directories
+    const skipPatterns = [
+      'node_modules',
+      '.git',
+      '.claude',
+      'dist',
+      'build',
+      '.next',
+      '.turbo',
+      'coverage'
+    ];
 
-  const dirName = path.basename(targetPath);
-  if (skipPatterns.some(pattern => dirName.includes(pattern))) {
-    return { allow: true };
-  }
+    const dirName = path.basename(targetPath);
+    if (skipPatterns.some(pattern => dirName.includes(pattern))) {
+      return { allow: true };
+    }
 
-  // Check if parent directory exists
-  const parentDir = path.dirname(targetPath);
-  if (!fs.existsSync(parentDir)) {
+    // Check if parent directory exists
+    const parentDir = path.dirname(targetPath);
+    if (!fs.existsSync(parentDir)) {
+      return {
+        allow: false,
+        error: `Cannot create directory: parent directory ${parentDir} does not exist`
+      };
+    }
+
+    logEnforcement('DIRECTORY_CREATE_ATTEMPT', {
+      path: targetPath,
+      operation
+    });
+
     return {
-      allow: false,
-      error: `Cannot create directory: parent directory ${parentDir} does not exist`
+      allow: true,
+      warning: `Remember to create BRIEF.md in ${targetPath} immediately after creation`,
+      postCreateCheck: true
     };
+  } catch (error) {
+    logEnforcement('error', {
+      function: 'preDirectoryCreate',
+      error: error.message
+    });
+    return { allow: true }; // Allow operation on error to prevent blocking
   }
-
-  logEnforcement('DIRECTORY_CREATE_ATTEMPT', {
-    path: targetPath,
-    operation
-  });
-
-  return {
-    allow: true,
-    warning: `Remember to create BRIEF.md in ${targetPath} immediately after creation`,
-    postCreateCheck: true
-  };
 };
 
 /**
@@ -145,28 +183,29 @@ export const preDirectoryCreate = async (context) => {
  * Validates BRIEF.md exists after directory creation
  */
 export const postDirectoryCreate = async (context) => {
-  const { targetPath } = context;
-  const briefPath = path.join(targetPath, 'BRIEF.md');
+  try {
+    const { targetPath } = context;
+    const briefPath = path.join(targetPath, 'BRIEF.md');
 
-  // Give a grace period for file creation
-  await new Promise(resolve => setTimeout(resolve, 100));
+    // Give a grace period for file creation
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-  if (!fs.existsSync(briefPath)) {
-    const warning = `BRIEF.md is required in ${targetPath}. Please create it with:
-    - A clear description of the directory's purpose
-    - Contents overview
-    - Any relevant notes`;
+    if (!fs.existsSync(briefPath)) {
+      const warning = `BRIEF.md is required in ${targetPath}. Please create it with:
+      - A clear description of the directory's purpose
+      - Contents overview
+      - Any relevant notes`;
 
-    logEnforcement('MISSING_BRIEF', {
-      path: targetPath,
-      file: 'BRIEF.md'
-    });
+      logEnforcement('MISSING_BRIEF', {
+        path: targetPath,
+        file: 'BRIEF.md'
+      });
 
-    return {
-      status: 'warning',
-      message: warning,
-      requiresAction: true
-    };
+      return {
+        status: 'warning',
+        message: warning,
+        requiresAction: true
+      };
   }
 
   // Validate BRIEF.md structure
