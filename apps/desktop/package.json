@@ -1,0 +1,45 @@
+{
+  "name": "@umemee/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "dev": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder --publish=never",
+    "lint": "eslint . --ext .js,.ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist out node_modules"
+  },
+  "dependencies": {
+    "electron-serve": "^2.1.1",
+    "electron-updater": "^6.5.0"
+  },
+  "devDependencies": {
+    "electron": "^34.1.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5"
+  },
+  "build": {
+    "appId": "com.umemee.desktop",
+    "productName": "Umemee",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

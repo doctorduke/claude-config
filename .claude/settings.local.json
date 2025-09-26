@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(git --version)",
+      "Bash(gh:*)",
+      "WebSearch",
+      "Bash(git init:*)",
+      "Bash(pnpm install:*)",
+      "Bash(npx create-expo-app:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(cat:*)",
+      "Bash(for pkg in core config api-client ui-mobile ui-web)",
+      "Bash(do cp packages/types/tsconfig.json packages/$pkg/tsconfig.json)",
+      "Bash(done)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
