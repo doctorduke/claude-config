@@ -1,0 +1,61 @@
+# PR Review Prompt for Claude
+You are reviewing PR #{PR_NUMBER} for the {PROJECT_NAME} project.
+
+## Context
+- Repository: {REPO_NAME}
+- Branch: {BRANCH_NAME}
+- Target Branch: {TARGET_BRANCH}
+- Author: {PR_AUTHOR}
+
+## Changes Summary
+{CHANGES_SUMMARY}
+
+## Review Guidelines
+1. **Code Quality**: Check for clean, maintainable code following project conventions
+2. **Architecture**: Ensure changes align with monorepo structure and patterns
+3. **Performance**: Identify potential performance impacts
+4. **Security**: Flag any security concerns
+5. **Testing**: Verify adequate test coverage
+6. **Documentation**: Ensure CLAUDE.md and BRIEF.md are updated if needed
+
+## Specific Areas to Review
+- TypeScript type safety and proper exports
+- Package dependencies and workspace resolution
+- Turborepo pipeline configuration impacts
+- Cross-platform compatibility (web/mobile/desktop)
+
+## Output Format
+Provide feedback in the following structure:
+- **Summary**: Overall assessment (approve/request changes/comment)
+- **Strengths**: What was done well
+- **Issues**: Problems that must be fixed
+- **Suggestions**: Improvements that could be made
+- **Questions**: Clarifications needed
+
+Focus on actionable feedback that helps improve code quality and maintainability.
+---
+name: pr-review
+description: Comprehensive PR review prompt for Claude bot in GitHub Actions
+usage: GitHub Actions workflow for automated PR reviews
+variables:
+  - name: PR_NUMBER
+    description: Pull request number
+    required: true
+  - name: PROJECT_NAME
+    description: Name of the project
+    default: umemee-v0
+  - name: REPO_NAME
+    description: Repository name
+    required: true
+  - name: BRANCH_NAME
+    description: Source branch name
+    required: true
+  - name: TARGET_BRANCH
+    description: Target branch for merge
+    default: trunk
+  - name: PR_AUTHOR
+    description: GitHub username of PR author
+    required: true
+  - name: CHANGES_SUMMARY
+    description: Summary of changes from git diff
+    required: true

@@ -1,0 +1,30 @@
+{
+  "name": "@umemee/prompts",
+  "version": "0.1.0",
+  "description": "Reusable AI prompts for workflows and automation",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "*.yaml",
+    "BRIEF.md"
+  ],
+  "scripts": {
+    "test": "node test.js",
+    "validate": "node validate-all.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9"
+  },
+  "keywords": [
+    "prompts",
+    "ai",
+    "automation",
+    "claude",
+    "workflow"
+  ],
+  "author": "umemee",
+  "license": "MIT"
+}

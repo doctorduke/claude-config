@@ -1,0 +1,100 @@
+# BRIEF.md Generator Prompt
+Generate a concise BRIEF.md file for the {PACKAGE_NAME} package in the {PROJECT_NAME} monorepo.
+
+## Package Information
+- **Package Path**: {PACKAGE_PATH}
+- **Package Type**: {PACKAGE_TYPE}
+- **Dependencies**: {DEPENDENCIES}
+- **Exported Modules**: {EXPORTS}
+
+## Source Code Context
+```typescript
+{CODE_SAMPLES}
+```
+
+## Package.json
+```json
+{PACKAGE_JSON}
+```
+
+## Generation Guidelines
+Create a BRIEF.md that follows this exact structure:
+
+```markdown
+# {Package Title}
+
+## Purpose
+{One paragraph explaining what this package does and why it exists}
+
+## Structure
+{Brief overview of main directories and files}
+
+## Usage
+{Code example showing how to use this package}
+
+## {Type-Specific Section}
+{For UI packages: "Components"}
+{For utility packages: "API"}
+{For platform packages: "Features"}
+{For core modules: "Architecture"}
+
+## {Additional Relevant Section}
+{Based on package characteristics}
+```
+
+## Requirements
+1. **Conciseness**: Maximum 100 lines total
+2. **Clarity**: Assume reader knows TypeScript/React
+3. **Practical**: Focus on usage over theory
+4. **Monorepo-Aware**: Show imports using @umemee/ prefix
+5. **Human-Readable**: Write for developers, not AI
+
+## Style Guidelines
+- Use bullet points for lists
+- Include 1-2 practical code examples
+- Highlight key exports and public API
+- Mention cross-package dependencies
+- No redundant information from CLAUDE.md
+
+## Sections Priority
+1. Purpose (why this exists)
+2. Usage (how to use it)
+3. API/Components (what's available)
+4. Structure (how it's organized)
+5. Dependencies (what it needs)
+
+## Avoid
+- Lengthy explanations
+- Implementation details
+- Contribution guidelines
+- Installation instructions (handled by monorepo)
+- Duplicate information from root docs
+---
+name: brief-generator
+description: Generates concise BRIEF.md documentation for packages following monorepo conventions
+usage: Package initialization, documentation updates, CI documentation checks
+variables:
+  - name: PACKAGE_NAME
+    description: Package name with @umemee/ prefix
+    required: true
+  - name: PROJECT_NAME
+    description: Name of the project
+    default: umemee-v0
+  - name: PACKAGE_PATH
+    description: Relative path from monorepo root
+    required: true
+  - name: PACKAGE_TYPE
+    description: Type of package (platform/shared/core-module/service)
+    required: true
+  - name: DEPENDENCIES
+    description: List of key dependencies
+    default: ""
+  - name: EXPORTS
+    description: Main exports from the package
+    default: ""
+  - name: CODE_SAMPLES
+    description: Representative code snippets
+    default: ""
+  - name: PACKAGE_JSON
+    description: Package.json content
+    required: true
