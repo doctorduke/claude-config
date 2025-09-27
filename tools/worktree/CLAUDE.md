@@ -32,18 +32,21 @@ worktree/
 ## Conventions
 
 ### Worktree Naming
-- Directory pattern: `../umemee-{branch-name}`
-- Feature branches: `../umemee-feature-{name}`
-- Hotfix branches: `../umemee-hotfix-{issue}`
-- Review branches: `../umemee-review-{pr-number}`
+- Directory location: `.trees/{feature-name}`
+- Feature branches: `.trees/{feature-name}`
+- Hotfix branches: `.trees/hotfix-{issue}`
+- Review branches: `.trees/review-{pr-number}`
 
 ### Directory Structure
 ```
-parent-directory/
-├── umemee-v0/          # Main repository
-├── umemee-feature-x/   # Feature worktree
-├── umemee-hotfix-123/  # Hotfix worktree
-└── umemee-review-456/  # Review worktree
+umemee-v0/                # Main repository
+├── .trees/              # Worktree directory
+│   ├── feature-x/       # Feature worktree
+│   ├── hotfix-123/      # Hotfix worktree
+│   └── review-456/      # Review worktree
+├── platforms/
+├── shared/
+└── ...
 ```
 
 ## Common Tasks
@@ -56,8 +59,8 @@ parent-directory/
 # Create from existing branch
 ./tools/worktree/create.sh --branch origin/feature-branch
 
-# Create with custom path
-./tools/worktree/create.sh --path ../custom-path feature/branch
+# Create with custom name
+./tools/worktree/create.sh feature/branch
 ```
 
 ### Managing Worktrees
@@ -125,8 +128,8 @@ parent-directory/
 ### Feature Development
 ```bash
 # Start feature
-./tools/worktree/create.sh feature/awesome-feature
-cd ../umemee-feature-awesome-feature
+./tools/worktree/create.sh awesome-feature
+cd .trees/awesome-feature
 pnpm install
 pnpm dev
 
@@ -143,7 +146,7 @@ pnpm dev
 ```bash
 # Review PR
 ./tools/worktree/create.sh --branch origin/pr/123 review-123
-cd ../umemee-review-123
+cd .trees/review-123
 pnpm install
 pnpm test
 

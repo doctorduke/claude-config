@@ -1,3 +1,28 @@
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*
+!.env.example
+
+# Secrets
+*.key
+*.pem
+
+# Node
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist
+build
+.next
+out
 # Dependencies
 node_modules/
 .pnp
@@ -45,6 +70,9 @@ lerna-debug.log*
 .DS_Store
 Thumbs.db
 
+# Claude settings
+.claude/settings.local.json
+
 # Turborepo
 .turbo/
 
@@ -90,6 +118,7 @@ android/build/
 
 # Git worktrees
 .git-worktree/
+.trees/
 
 # Temporary files
 *.tmp

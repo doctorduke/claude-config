@@ -13,7 +13,9 @@ fi
 FEATURE_NAME=$1
 BASE_BRANCH=${2:-trunk}
 BRANCH_NAME="feature/$FEATURE_NAME"
-WORKTREE_PATH="../umemee-$FEATURE_NAME"
+# Use .trees/ directory for worktrees (relative to repo root)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+WORKTREE_PATH="$REPO_ROOT/.trees/$FEATURE_NAME"
 
 echo "Creating worktree for feature '$FEATURE_NAME'..."
 

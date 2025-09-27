@@ -11,7 +11,9 @@ if [ $# -lt 1 ]; then
 fi
 
 FEATURE_NAME=$1
-WORKTREE_PATH="../umemee-$FEATURE_NAME"
+# Use .trees/ directory for worktrees (relative to repo root)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+WORKTREE_PATH="$REPO_ROOT/.trees/$FEATURE_NAME"
 BRANCH_NAME="feature/$FEATURE_NAME"
 
 if [ ! -d "$WORKTREE_PATH" ]; then
