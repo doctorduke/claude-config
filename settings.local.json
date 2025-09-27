@@ -37,7 +37,11 @@
       "Bash(pnpm ls:*)",
       "Bash(pnpm eslint:*)",
       "Bash(pnpm lint:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(pnpm view:*)",
+      "Bash(npx js-yaml:*)",
+      "Bash(/dev/null)",
+      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/claude.yml''))\")"
     ],
     "deny": [],
     "ask": []
