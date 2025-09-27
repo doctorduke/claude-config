@@ -20,18 +20,18 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@umemee/*": ["packages/*/src"]
+      "@umemee/*": ["shared/*/src"]
     }
   },
   "references": [
-    { "path": "./packages/types" },
-    { "path": "./packages/config" },
-    { "path": "./packages/core" },
-    { "path": "./packages/api-client" },
-    { "path": "./packages/ui-mobile" },
-    { "path": "./packages/ui-web" },
-    { "path": "./apps/mobile" },
-    { "path": "./apps/web" },
-    { "path": "./apps/desktop" }
+    { "path": "./shared/types" },
+    { "path": "./shared/config" },
+    { "path": "./shared/utils" },
+    { "path": "./shared/api-client" },
+    { "path": "./shared/ui-mobile" },
+    { "path": "./shared/ui-web" },
+    { "path": "./platforms/mobile" },
+    { "path": "./platforms/web" },
+    { "path": "./platforms/desktop" }
   ]
 }

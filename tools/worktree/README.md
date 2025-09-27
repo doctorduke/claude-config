@@ -2,6 +2,8 @@
 
 These scripts facilitate parallel development using git worktrees, allowing work on multiple features simultaneously without switching branches.
 
+All worktrees are created in the `.trees/` directory within the repository root for better organization and consistency.
+
 ## Creating a Feature Worktree
 
 ```bash
@@ -15,7 +17,7 @@ Example:
 
 This creates:
 - A new branch: `feature/user-authentication`
-- A worktree at: `../umemee-user-authentication`
+- A worktree at: `.trees/user-authentication`
 
 ## Listing Active Worktrees
 
@@ -53,7 +55,7 @@ Example:
 
 2. Navigate to the worktree:
    ```bash
-   cd ../umemee-new-feature
+   cd .trees/new-feature
    ```
 
 3. Install dependencies and start development:
@@ -77,4 +79,5 @@ Example:
 - Keep worktrees for active development only
 - Clean up worktrees after merging
 - Each worktree should focus on a single feature/fix
-- Don't create worktrees inside the main repository
+- Worktrees are automatically created in `.trees/` directory
+- The `.trees/` directory is ignored by git for cleaner repository

@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: '20'
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: '20'
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: '20'
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
@@ -77,7 +77,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: '20'
           cache: 'pnpm'
 
       - uses: expo/expo-github-action@v8
@@ -89,33 +89,4 @@ jobs:
 
       - run: pnpm --filter @umemee/mobile build
 
-  build-desktop:
-    name: Build Desktop
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '23'
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Build Next.js for Desktop
-        run: pnpm --filter @umemee/web build
-
-      - name: Package Electron App
-        run: pnpm --filter @umemee/desktop dist
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: desktop-${{ matrix.os }}
-          path: apps/desktop/dist/
+  # Desktop builds disabled pending Tauri migration - removed to prevent confusion

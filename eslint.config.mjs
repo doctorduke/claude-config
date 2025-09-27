@@ -6,6 +6,29 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default [
   js.configs.recommended,
+  // Configuration for JavaScript files (including Electron)
+  {
+    files: ['**/*.{js,mjs,cjs}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        global: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  // Configuration for TypeScript files
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -16,6 +39,7 @@ export default [
         project: ['./tsconfig.json', './apps/*/tsconfig.json', './packages/*/tsconfig.json'],
       },
       globals: {
+        // Node.js globals
         process: 'readonly',
         console: 'readonly',
         Buffer: 'readonly',
@@ -23,6 +47,25 @@ export default [
         require: 'readonly',
         module: 'readonly',
         exports: 'readonly',
+        // Browser globals
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        FormData: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        // Fetch API types
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        Request: 'readonly',
+        Headers: 'readonly',
       },
     },
     plugins: {
