@@ -43,8 +43,7 @@ Only after completing the analysis and planning phases should you proceed to wri
 
 We need to continue where the last engineer left off in the attached document. The report is located in specified files at <UPDATE_FILES>.
 <UPDATE_FILES>
-1. @PLEASE-DETAIL.md
-2. @LAST-UPDATE.md
+@please-detail/
 <UPDATE_FILES>
 
 Can you identify in the code where the affected code will be located or sourced as reference?

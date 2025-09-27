@@ -1,4 +1,4 @@
-# CLAUDE.md - Desktop Platform
+# DEPRECATED - Migrating to Tauri
 
 ## Purpose
 The desktop platform delivers umemee as a native desktop application using Tauri, combining a Rust backend with a React frontend. This platform provides system-level integration, file system access, native performance, and enhanced security while maintaining a small bundle size and resource footprint.

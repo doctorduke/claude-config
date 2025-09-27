@@ -6,6 +6,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the umemee-v0 monorepo, a mobile-first multi-platform application showcasing bleeding-edge development practices. Built with pnpm workspaces and Turborepo for optimal performance and code sharing across platforms.
 
+## Documentation Philosophy
+
+This project uses a three-tier documentation system:
+
+### 1. BRIEF.md (Human-First)
+- **Required**: Every directory with code or configuration
+- **Length**: 10-15 lines maximum
+- **Purpose**: Quick human orientation
+- **Format**: Title, one-line purpose, contents list, relationships
+
+### 2. CLAUDE.md (AI-First)
+- **Required**: Major directories and modules
+- **Length**: Comprehensive (100+ lines)
+- **Purpose**: Detailed AI instructions
+- **Format**: Purpose, dependencies, conventions, tasks, gotchas
+
+### 3. _reference/ (Deep Dive)
+- **Optional**: For complex architectural decisions
+- **Length**: As needed
+- **Purpose**: Technical deep dives, ADRs, performance notes
+- **Format**: Markdown documents organized by topic
+
+**Important**: Always read BRIEF.md first for quick context, then CLAUDE.md for detailed instructions.
+
 ## Build Commands
 
 ```bash
@@ -51,11 +75,12 @@ pnpm android --filter=@umemee/mobile # Run on Android emulator
 pnpm build --filter=@umemee/mobile   # Export for production
 ```
 
-### Desktop Platform
+### Desktop Platform (Currently Disabled - Migrating to Tauri)
 ```bash
-pnpm dev --filter=@umemee/desktop    # Start Electron app
-pnpm build --filter=@umemee/desktop  # Build with electron-builder
-pnpm dist --filter=@umemee/desktop   # Create distribution packages
+# Desktop commands are temporarily disabled during Tauri migration
+# See platforms/desktop/MIGRATION-TO-TAURI.md for details
+# pnpm dev --filter=@umemee/desktop    # Will be re-enabled with Tauri
+# pnpm build --filter=@umemee/desktop  # Will be re-enabled with Tauri
 ```
 
 ## Testing
@@ -85,7 +110,7 @@ umemee-v0/
 ├── platforms/          # Platform-specific applications
 │   ├── web/           # Next.js 15+ with App Router for web/PWA
 │   ├── mobile/        # React Native with Expo for iOS/Android
-│   └── desktop/       # Electron for Windows/Mac/Linux
+│   └── desktop/       # (Disabled) Migrating from Electron to Tauri
 ├── shared/            # Shared packages across all platforms
 │   ├── types/         # TypeScript type definitions (foundational)
 │   ├── config/        # Shared configuration and constants
@@ -164,6 +189,9 @@ pnpm setup:mcps
 - **TypeScript**: Strict mode enabled across all packages
 - **Module Resolution**: Use package names (`@umemee/*`) not relative paths for cross-package imports
 - **Build Order**: Turborepo handles automatically, but be aware of dependency order
+- **Desktop Platform**: Currently disabled, migrating from Electron to Tauri (see platforms/desktop/MIGRATION-TO-TAURI.md)
+- **Documentation**: Every directory must have a BRIEF.md file
+- **MCP Servers**: Enhanced capabilities via mcp__filesystem, mcp__github, etc.
 
 ## Common Development Patterns
 

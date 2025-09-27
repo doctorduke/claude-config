@@ -41,7 +41,15 @@
       "Bash(pnpm view:*)",
       "Bash(npx js-yaml:*)",
       "Bash(/dev/null)",
-      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/claude.yml''))\")"
+      "Bash(python3 -c \"import yaml; yaml.safe_load(open(''.github/workflows/claude.yml''))\")",
+      "Bash(while read dir)",
+      "Bash(do [ ! -f \"$dir/BRIEF.md\" ])",
+      "Bash(echo \"$dir\")",
+      "Bash(do test -f \"$dir/BRIEF.md\")",
+      "Bash(echo:*)",
+      "Bash(mkdir:*)",
+      "mcp__filesystem__create_directory",
+      "Bash(pnpm add:*)"
     ],
     "deny": [],
     "ask": []
