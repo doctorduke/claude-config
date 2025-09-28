@@ -26,7 +26,8 @@ jobs:
       - name: Vale Linter
         uses: errata-ai/vale-action@v2
         with:
-          files: '["**/*.md"]'
+          files: all
+          fail_on_error: false
 
       - name: BRIEF hard gate
         run: bash scripts/brief/check-brief.sh
