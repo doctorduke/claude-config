@@ -3,7 +3,7 @@ name: BRIEF CI
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [ main, trunk, feat/wave1-restructure-and-docs ]
 
 jobs:
   brief-ci:
@@ -24,9 +24,9 @@ jobs:
           config-file: mlc_config.json
 
       - name: Vale Linter
-        uses: errata-ai/vale-action@v2.1.1
+        uses: errata-ai/vale-action@v2
         with:
-          files: '**/*.md'
+          files: '["**/*.md"]'
 
       - name: BRIEF hard gate
         run: bash scripts/brief/check-brief.sh
