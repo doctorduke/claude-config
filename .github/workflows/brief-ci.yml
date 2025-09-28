@@ -1,0 +1,44 @@
+name: BRIEF CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  brief-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v20
+        with:
+          globs: |
+            **/*.md
+          config: .markdownlint.jsonc
+
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: mlc_config.json
+
+      - name: Vale Linter
+        uses: errata-ai/vale-action@v2.1.1
+        with:
+          files: '**/*.md'
+
+      - name: BRIEF hard gate
+        run: bash scripts/brief/check-brief.sh
+
+      - name: (Optional) AI sanity check via Anthropic Messages API
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          jq -n --arg content "$(sed 's/"/\"/g' BRIEF.md)" '{
+            model:"claude-3-5-sonnet-20240620",
+            max_tokens: 300,
+            messages:[{role:"user",content:"Check this BRIEF for missing required sections and outdated Spec Snapshot date. Return JSON with ok:boolean and reasons: \n\n" + $content}]
+          }' > payload.json
+          curl https://api.anthropic.com/v1/messages             -H "content-type: application/json"             -H "x-api-key: $ANTHROPIC_API_KEY"             -H "anthropic-version: 2023-06-01"             -d @payload.json -s | tee ai_check.json
