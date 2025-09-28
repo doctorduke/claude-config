@@ -1,7 +1,14 @@
-# Prompts System
+# Prompts System — BRIEF
 
-## Overview
-Centralized prompt management system for the umemee-v0 monorepo, enabling reuse across workflows, CI/CD, and development tools.
+## Purpose & Boundary
+Centralized prompt management system for the umemee-v0 monorepo, enabling reuse across workflows, CI/CD, and development tools. Manages YAML-based prompt templates with variable substitution.
+
+## Interface Contract (Inputs → Outputs)
+- **Inputs**: Prompt name, template variables, YAML definitions
+- **Outputs**: Parsed prompt strings, rendered templates, validated prompts
+- **Acceptance**:
+  - GIVEN prompt name WHEN loaded THEN returns template
+  - GIVEN template with variables WHEN parsed THEN substitutes values
 
 ## Structure
 ```
@@ -44,6 +51,28 @@ const rendered = parsePrompt(prReviewPrompt, {
 | `context-aware-response` | Context-aware conversation prompts | Claude conversations |
 | `code-fix` | CI failure fixing instructions | Automated fixes |
 | `brief-generator` | BRIEF.md generation template | Documentation creation |
+
+## Dependencies & Integration Points
+- Upstream: YAML files, Node.js runtime
+- Downstream: GitHub Actions, CI/CD, development tools
+
+## Work State (Planned / Doing / Done)
+- **Done**: Basic prompt loading and parsing system
+
+## Spec Snapshot (2025-09-27)
+- Features: YAML prompts, variable substitution, validation
+- Tech: Node.js, YAML parsing
+
+## Decisions & Rationale
+- 2025-09-27 — YAML format for human readability
+
+## Local Reference Index
+- Prompt files: pr-review.yaml, code-fix.yaml, context-aware-response.yaml, brief-generator.yaml
+
+## Answer Pack (YAML)
+kind: answerpack
+module: shared/prompts/
+intent: "Centralized prompt management for AI integrations"
 
 ## Creating New Prompts
 

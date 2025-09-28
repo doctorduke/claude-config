@@ -1,29 +1,41 @@
-# Desktop Platform
+# Desktop Platform — BRIEF
 
-**Status: Pending migration from Electron to Tauri**
+## Purpose & Boundary
+Desktop application for Windows, macOS, and Linux. Currently migrating from Electron to Tauri for better performance and smaller bundle size. Owns desktop-specific features like system tray and native menus.
 
-## Current State
-- Initial Electron setup exists but is not functional
-- CI/CD builds are disabled to prevent failures
-- Migration to Tauri is planned for better performance and smaller bundle size
+## Interface Contract (Inputs → Outputs)
+- **Inputs**: Native OS events, file system access, keyboard shortcuts, IPC from frontend
+- **Outputs**: Desktop window, system tray icon, native menus, file operations
+- **Acceptance**:
+  - GIVEN Tauri migration complete WHEN app launches THEN < 10MB bundle
+  - GIVEN native menu WHEN clicked THEN proper action executed
+- **Anti-Goals**: Not functional until Tauri migration complete
 
-## Why Tauri?
-- Rust-based backend for superior performance
-- Smaller bundle sizes (MB vs GB)
-- Better security model with isolated contexts
-- Native system integration without Node.js overhead
-- Cross-platform consistency with native feel
+## Dependencies & Integration Points
+- Upstream: Embeds web platform UI, uses shared packages
+- Downstream: OS-specific installers and auto-update infrastructure
 
-## Contents (Post-Migration)
-- Tauri Rust backend for system integration
-- Desktop-specific features (system tray, file access)
-- Native menu integration
-- Auto-update mechanism via Tauri updater
+## Work State (Planned / Doing / Done)
+- **Doing**: [DESK-01] Electron to Tauri migration
+- **Planned**: [DESK-02] System tray implementation
+- **Planned**: [DESK-03] Auto-updater setup
 
-## Key Relationships
-- Will embed web platform for UI
-- Uses `@umemee/api-client` for backend
-- Leverages `@umemee/types` for type safety
+## Spec Snapshot (2025-09-27)
+- Status: Migration in progress, CI disabled
+- Target: Tauri 2.0+ with Rust backend
+- See: MIGRATION-TO-TAURI.md
 
-## Next Steps
-See MIGRATION-TO-TAURI.md for detailed migration plan and timeline.
+## Decisions & Rationale
+- 2025-09-27 — Tauri over Electron (10x smaller, better security, native performance)
+
+## Local Reference Index
+- MIGRATION-TO-TAURI.md → Migration plan and timeline
+
+## Answer Pack (YAML)
+kind: answerpack
+module: platforms/desktop/
+intent: "Native desktop application (migrating to Tauri)"
+status: "migration_in_progress"
+interfaces:
+  inputs: ["os_events", "file_system", "keyboard_shortcuts"]
+  outputs: ["desktop_window", "system_tray", "native_menus"]
