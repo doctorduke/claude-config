@@ -1,0 +1,55 @@
+# BRIEF — <Project>
+
+> This BRIEF is the **agent-facing, normative overview** of this project. Keep it short and link all depth.
+> For daily use, start here; follow **Local Reference Index** for details.
+
+## Interface Contract
+- **Intent**: <one line>
+- **Inputs**: <APIs, events, CLI flags>
+- **Outputs**: <responses, events, side effects>
+- **Acceptance Oracles**:
+  - GIVEN <precondition> WHEN <action> THEN <result>
+
+## Spec Snapshot ({{DATE}})
+- Scope: <what’s in and out right now>
+- Constraints: <perf/SLOs/SLAs/security>
+- Release gates: <what must be true before ship>
+
+## Local Reference Index
+- [ADRs](_reference/adr/)
+- [Diagrams](_reference/diagrams/)
+- [Module BRIEFs](./packages/<module>/BRIEF.md)
+
+## Decisions & Rationale
+- ADR-001: <decision> → _reference/adr/ADR-001.md
+
+## Claude Code Integration — Update `CLAUDE.md`
+Add (or update) a `CLAUDE.md` at the project root with rules that make Claude read BRIEFs first.
+If you already have one (Claude Code may create it during `/init`), append this block.
+
+```md
+# CLAUDE.md — BRIEF-first rules
+
+## Orientation
+1) Always open the **nearest `BRIEF.md`** (current dir or parent).
+2) Read sections in this order: **Interface Contract → Spec Snapshot → Answer Pack**.
+3) For details, only follow links in **Local Reference Index**; do not roam the tree.
+
+## Editing Discipline
+- If a BRIEF section is missing/stale, propose the minimal edit to `BRIEF.md` with a dated **Spec Snapshot (YYYY-MM-DD)**.
+- Keep `BRIEF.md` ≤ 200 lines; move depth to `_reference/`.
+
+## File Priorities
+- Prefer: `BRIEF.md`, `_reference/adr/*`, `_reference/diagrams/*`.
+- Avoid vendor/build artifacts and large auto-generated files.
+```
+
+> Notes:
+> - Claude Code recognizes a project-level `CLAUDE.md` as persistent instructions; many teams keep one per repo (and optionally per module).  
+> - In **Cursor**, project rules live in `.cursor/rules/` and accomplish the same “read BRIEF first” behavior.
+> - In **Cody**, add `BRIEF.md` explicitly as context (e.g., `@BRIEF.md`) or use org-level Context Filters.
+
+## Answer Pack (for agents)
+- TL;DR: <short>
+- Paths: `BRIEF.md`, `_reference/adr/`, `_reference/diagrams/`
+- Don’t guess: If unknown, open a docs issue.
