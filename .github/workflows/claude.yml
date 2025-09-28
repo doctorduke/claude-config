@@ -224,7 +224,7 @@ jobs:
             ${{ github.event_name == 'pull_request' && format('Analyzing PR: {0}', github.event.pull_request.body) || '' }}
             ${{ github.event_name == 'pull_request_review_comment' && format('Responding to review comment: {0}', github.event.comment.body) || '' }}
             ${{ github.event_name == 'pull_request_review' && format('Responding to review: {0}', github.event.review.body) || '' }}
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-rounds 10"
+          claude_args: "--model claude-3-5-sonnet-20241022"
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
