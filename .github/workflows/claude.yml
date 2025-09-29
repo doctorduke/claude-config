@@ -18,7 +18,7 @@ jobs:
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
@@ -64,14 +64,79 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
           token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+          # For PRs, checkout the head branch to see the actual changes
+          ref: ${{ github.event.pull_request && github.event.pull_request.head.ref || github.ref }}
 
       - name: Configure Git
         run: |
           git config --global user.email "claude-bot@anthropic.com"
           git config --global user.name "Claude Code Bot"
 
+      - name: Gather conversation context
+        id: context
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.GITHUB_TOKEN }}
+          script: |
+            let conversationHistory = "";
+            let issueNumber = context.issue?.number || context.payload.pull_request?.number;
+
+            if (!issueNumber && context.eventName === 'issue_comment') {
+              issueNumber = context.issue.number;
+            }
+
+            if (issueNumber) {
+              try {
+                // Check if this is actually a PR
+                try {
+                  const pr = await github.rest.pulls.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: issueNumber
+                  });
+                  if (pr.data) {
+                    conversationHistory += `## Pull Request #${issueNumber}: ${pr.data.title}\n\n`;
+                    conversationHistory += `**Author:** ${pr.data.user.login}\n`;
+                    conversationHistory += `**Branch:** ${pr.data.head.ref} → ${pr.data.base.ref}\n`;
+                    conversationHistory += `**Body:**\n${pr.data.body || 'No description'}\n\n`;
+                  }
+                } catch (e) {
+                  // Not a PR, treat as issue
+                  const issue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber
+                  });
+                  conversationHistory += `## Issue #${issueNumber}: ${issue.data.title}\n\n`;
+                  conversationHistory += `**Author:** ${issue.data.user.login}\n`;
+                  conversationHistory += `**Body:**\n${issue.data.body || 'No description'}\n\n`;
+                }
+
+                // Get all comments
+                const comments = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                });
+
+                if (comments.data.length > 0) {
+                  conversationHistory += "## Previous Comments:\n\n";
+                  comments.data.forEach(comment => {
+                    conversationHistory += `**${comment.user.login}** (${new Date(comment.created_at).toLocaleString()}):\n`;
+                    conversationHistory += `${comment.body}\n\n---\n\n`;
+                  });
+                }
+              } catch (error) {
+                console.log("Error gathering context:", error);
+              }
+            }
+
+            // Save to file to avoid escaping issues
+            const fs = require('fs');
+            fs.writeFileSync('/tmp/conversation.txt', conversationHistory);
+            console.log("Conversation context saved to /tmp/conversation.txt");
 
       - name: Run Claude Code
         id: claude
@@ -83,7 +148,17 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
-            You are responding to this GitHub comment/request:
+            First, read the full conversation context to understand what's being discussed:
+            ```bash
+            cat /tmp/conversation.txt
+            ```
+
+            If this is a PR, you can view the changes with:
+            ```bash
+            gh pr diff ${{ github.event.issue.number || github.event.pull_request.number || '' }}
+            ```
+
+            Current request you're responding to:
             """
             ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
             ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
@@ -91,9 +166,9 @@ jobs:
             ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
             """
 
-            IMPORTANT: Focus on addressing the specific request above. Do NOT provide a general code review unless specifically asked.
+            IMPORTANT: Use the conversation context above to understand what's being discussed. Focus on the specific request, not general reviews.
 
-            CRITICAL: After completing the task, you MUST post a comment. Even if you run out of time, post what you've done:
+            CRITICAL: After completing the task, you MUST post a comment with your response:
 
             ```bash
             # At the END of your work, ALWAYS execute these two commands:
