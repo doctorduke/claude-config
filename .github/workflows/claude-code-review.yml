@@ -43,6 +43,12 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ env.GITHUB_TOKEN }}
           track_progress: true
-          prompt: /review
-          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 10'
+          prompt: |
+            Review this PR and provide feedback on code quality, bugs, performance, security, and test coverage.
+
+            IMPORTANT: You MUST post your review as a PR comment using:
+            `gh pr comment ${{ github.event.pull_request.number }} --body "Your review here"`
+
+            Format your review with clear sections and be constructive.
+          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"'
 

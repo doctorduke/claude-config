@@ -75,4 +75,15 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ env.GITHUB_TOKEN }}
           track_progress: true
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10"
+          prompt: |
+            ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
+            ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
+            ${{ github.event_name == 'pull_request_review' && github.event.review.body || '' }}
+            ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
+
+            IMPORTANT: After completing your analysis or task, you MUST post your response as a comment:
+            - For issues: Use `gh issue comment ${{ github.event.issue.number || '' }} --body "Your response"`
+            - For PRs: Use `gh pr comment ${{ github.event.pull_request.number || '' }} --body "Your response"`
+
+            Post a comprehensive response with your findings, even if you encounter errors.
+          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
