@@ -83,27 +83,31 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
+            You are responding to this GitHub comment/request:
+            """
             ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
             ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
             ${{ github.event_name == 'pull_request_review' && github.event.review.body || '' }}
             ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
+            """
 
-            CRITICAL: You MUST post your response as a GitHub comment.
+            IMPORTANT: Focus on addressing the specific request above. Do NOT provide a general code review unless specifically asked.
+
+            After completing the requested task, you MUST post your response as a GitHub comment.
 
             The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
 
             Execute this EXACT sequence of commands using the Bash tool:
 
             ```bash
-            # Save your response to a file
+            # Save your response about the completed task to a file
             cat > /tmp/response.md << 'EOF'
-            [Put your complete response here with markdown formatting]
+            [Your response to the specific request above - NOT a code review]
             EOF
 
             # Post the comment - this command MUST be executed
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
 
-            IMPORTANT: You MUST execute BOTH commands above. First save your response, then post it.
-            The gh issue comment command works for both issues AND pull requests.
+            Remember: Respond ONLY to what was asked in the comment. Do not provide a code review unless that was the request.
           claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
