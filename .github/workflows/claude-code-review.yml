@@ -48,16 +48,28 @@ jobs:
           prompt: |
             Review PR #${{ github.event.pull_request.number }} and provide feedback on code quality, bugs, performance, security, and test coverage.
 
-            CRITICAL: After completing your review, you MUST execute this exact command with Bash tool:
+            CRITICAL: After completing your review, you MUST post it to the PR:
 
-            First, save your review to a file, then post it:
+            1. First, use the Write tool to save your review:
+            Write /tmp/review.md with your complete review content including:
+            - ## 🤖 Claude Code Review
+            - ### Summary
+            - ### Code Quality
+            - ### Potential Issues
+            - ### Suggestions
+            - Bot signature footer
+
+            2. Then post the review:
             ```bash
-            cat > /tmp/review.md << 'EOF'
-            [Your complete review content here with markdown formatting]
-            EOF
             gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review.md
             ```
 
-            The review MUST be posted as a comment on the PR. Do not just output the review - actually run the gh command above.
-          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 15 --allowed-tools "Bash(cat:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Write,Glob,Grep"'
+            3. ERROR HANDLING: If posting fails, create an error report:
+            Write /tmp/error.md with error message, then:
+            ```bash
+            gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/error.md
+            ```
+
+            The review MUST be posted as a comment on the PR. Always ensure a comment is posted even if errors occur.
+          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools "Bash(cat:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(echo:*),Read,Write,MultiEdit,Glob,Grep"'
 
