@@ -204,6 +204,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ env.GITHUB_TOKEN }}
+          track_progress: true
           prompt: |
             ## Conversation History and Context
 
@@ -224,13 +225,27 @@ jobs:
 
             ## Current Event Details
 
+            REPO: ${{ github.repository }}
             ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
-            ${{ github.event_name == 'issues' && format('Analyzing new issue: {0}', github.event.issue.body) || '' }}
-            ${{ github.event_name == 'issue_comment' && format('Responding to comment: {0}', github.event.comment.body) || '' }}
-            ${{ github.event_name == 'pull_request' && format('Analyzing PR: {0}', github.event.pull_request.body) || '' }}
-            ${{ github.event_name == 'pull_request_review_comment' && format('Responding to review comment: {0}', github.event.comment.body) || '' }}
-            ${{ github.event_name == 'pull_request_review' && format('Responding to review: {0}', github.event.review.body) || '' }}
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(git:*),Bash(gh:*),Edit,Read,Write,Glob,Grep'"
+            ${{ github.event_name == 'issues' && format('ISSUE NUMBER: {0}\nAnalyzing new issue: {1}', github.event.issue.number, github.event.issue.body) || '' }}
+            ${{ github.event_name == 'issue_comment' && format('ISSUE NUMBER: {0}\nResponding to comment: {1}', github.event.issue.number, github.event.comment.body) || '' }}
+            ${{ github.event_name == 'pull_request' && format('PR NUMBER: {0}\nAnalyzing PR: {1}', github.event.pull_request.number, github.event.pull_request.body) || '' }}
+            ${{ github.event_name == 'pull_request_review_comment' && format('PR NUMBER: {0}\nResponding to review comment: {1}', github.event.pull_request.number, github.event.comment.body) || '' }}
+            ${{ github.event_name == 'pull_request_review' && format('PR NUMBER: {0}\nResponding to review: {1}', github.event.pull_request.number, github.event.review.body) || '' }}
+
+            ## IMPORTANT: Post Your Response
+
+            After you complete your analysis or tasks, you MUST post your response as a comment:
+
+            For issues and issue comments:
+            - Use: `gh issue comment ${{ github.event.issue.number || '' }} --body "Your response here"`
+
+            For pull requests and PR comments:
+            - Use: `gh pr comment ${{ github.event.pull_request.number || '' }} --body "Your response here"`
+
+            Make sure to format your response with proper markdown and be comprehensive but concise.
+            Always post a comment with your findings, even if you encounter errors or cannot complete a task.
+          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(git:*),Bash(gh:*),Bash(gh issue comment:*),Bash(gh pr comment:*),Edit,Read,Write,Glob,Grep'"
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
