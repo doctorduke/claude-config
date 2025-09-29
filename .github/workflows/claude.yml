@@ -77,7 +77,6 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
-          track_progress: true
           prompt: |
             ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
             ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
