@@ -50,7 +50,13 @@
       "Bash(mkdir:*)",
       "mcp__filesystem__create_directory",
       "Bash(pnpm add:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "mcp__github__create_repository",
+      "Read(//private/tmp/**)",
+      "Bash(git subtree add:*)",
+      "Bash(find:*)",
+      "mcp__github__create_issue",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []
