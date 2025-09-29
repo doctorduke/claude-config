@@ -20,16 +20,42 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write  # Allow commits and pushes
-      pull-requests: write  # Allow PR updates
-      issues: write  # Allow issue updates
+      contents: write
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
 
     env:
       GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
 
     steps:
+      - name: Post initial comment with job link
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.GITHUB_TOKEN }}
+          script: |
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            let comment;
+
+            if (context.eventName === 'issue_comment' || context.eventName === 'issues') {
+              comment = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `🤖 Claude is processing your request...\n\n[View workflow run](${runUrl})`
+              });
+              core.setOutput('comment_id', comment.data.id);
+            } else if (context.eventName === 'pull_request_review_comment' || context.eventName === 'pull_request_review') {
+              comment = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `🤖 Claude is processing your request...\n\n[View workflow run](${runUrl})`
+              });
+              core.setOutput('comment_id', comment.data.id);
+            }
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -41,162 +67,6 @@ jobs:
           git config --global user.email "claude-bot@anthropic.com"
           git config --global user.name "Claude Code Bot"
 
-      - name: Get conversation context
-        id: context
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ env.GITHUB_TOKEN }}
-          script: |
-            let conversationContext = '';
-            let currentRequest = '';
-
-            // Helper function to format comments
-            function formatComment(comment, author) {
-              const timestamp = new Date(comment.created_at).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-              return `[${timestamp}] @${author}: ${comment.body}`;
-            }
-
-            try {
-              // Handle different event types
-              if (context.eventName === 'issue_comment') {
-                // Get all previous comments on the issue
-                const comments = await github.rest.issues.listComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  per_page: 100
-                });
-
-                // Get the issue body for context
-                const issue = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number
-                });
-
-                // Build conversation history
-                conversationContext = `## Issue Context\n\n`;
-                conversationContext += `**Title:** ${issue.data.title}\n\n`;
-                conversationContext += `**Original Issue by @${issue.data.user.login}:**\n${issue.data.body || 'No description provided'}\n\n`;
-
-                if (comments.data.length > 1) {
-                  conversationContext += `## Previous Comments (${comments.data.length - 1})\n\n`;
-                  // Include all comments except the current one
-                  const previousComments = comments.data
-                    .filter(c => c.id !== context.payload.comment.id)
-                    .map(c => formatComment(c, c.user.login))
-                    .join('\n---\n');
-                  conversationContext += previousComments ? previousComments : 'No previous comments';
-                }
-
-                currentRequest = `\n\n## Current Request\n\n${formatComment(context.payload.comment, context.payload.comment.user.login)}`;
-
-              } else if (context.eventName === 'pull_request_review_comment') {
-                // Get PR details
-                const pr = await github.rest.pulls.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: context.payload.pull_request.number
-                });
-
-                // Get all PR comments (both review and issue comments)
-                const [reviewComments, issueComments] = await Promise.all([
-                  github.rest.pulls.listReviewComments({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    pull_number: context.payload.pull_request.number,
-                    per_page: 100
-                  }),
-                  github.rest.issues.listComments({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: context.payload.pull_request.number,
-                    per_page: 100
-                  })
-                ]);
-
-                conversationContext = `## Pull Request Context\n\n`;
-                conversationContext += `**Title:** ${pr.data.title}\n\n`;
-                conversationContext += `**PR Description by @${pr.data.user.login}:**\n${pr.data.body || 'No description provided'}\n\n`;
-                conversationContext += `**Changes:** ${pr.data.additions} additions, ${pr.data.deletions} deletions across ${pr.data.changed_files} files\n\n`;
-
-                // Combine and sort all comments by timestamp
-                const allComments = [
-                  ...reviewComments.data.map(c => ({...c, type: 'review'})),
-                  ...issueComments.data.map(c => ({...c, type: 'issue'}))
-                ]
-                .filter(c => c.id !== context.payload.comment.id)
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-                if (allComments.length > 0) {
-                  conversationContext += `## Previous Comments (${allComments.length})\n\n`;
-                  const previousComments = allComments
-                    .map(c => formatComment(c, c.user.login))
-                    .join('\n---\n');
-                  conversationContext += previousComments;
-                }
-
-                currentRequest = `\n\n## Current Request\n\n${formatComment(context.payload.comment, context.payload.comment.user.login)}`;
-
-              } else if (context.eventName === 'pull_request_review') {
-                // Get PR details and all previous reviews
-                const pr = await github.rest.pulls.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: context.payload.pull_request.number
-                });
-
-                const reviews = await github.rest.pulls.listReviews({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: context.payload.pull_request.number,
-                  per_page: 100
-                });
-
-                conversationContext = `## Pull Request Context\n\n`;
-                conversationContext += `**Title:** ${pr.data.title}\n\n`;
-                conversationContext += `**PR Description by @${pr.data.user.login}:**\n${pr.data.body || 'No description provided'}\n\n`;
-                conversationContext += `**Changes:** ${pr.data.additions} additions, ${pr.data.deletions} deletions across ${pr.data.changed_files} files\n\n`;
-
-                // Include previous reviews
-                const previousReviews = reviews.data
-                  .filter(r => r.id !== context.payload.review.id && r.body)
-                  .map(r => `[${new Date(r.submitted_at).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}] @${r.user.login} (${r.state}): ${r.body}`)
-                  .join('\n---\n');
-
-                if (previousReviews) {
-                  conversationContext += `## Previous Reviews\n\n${previousReviews}\n\n`;
-                }
-
-                currentRequest = `\n\n## Current Review Request\n\n@${context.payload.review.user.login}: ${context.payload.review.body}`;
-
-              } else if (context.eventName === 'issues') {
-                // For new issues, just provide the issue context
-                conversationContext = `## New Issue\n\n`;
-                conversationContext += `**Title:** ${context.payload.issue.title}\n\n`;
-                conversationContext += `**Created by @${context.payload.issue.user.login}:**\n${context.payload.issue.body || 'No description provided'}`;
-                currentRequest = '';
-              }
-
-              // Set outputs
-              core.setOutput('conversation_context', conversationContext);
-              core.setOutput('current_request', currentRequest);
-
-            } catch (error) {
-              console.error('Error fetching conversation context:', error);
-              core.setOutput('conversation_context', '');
-              core.setOutput('current_request', '');
-            }
 
       - name: Run Claude Code
         id: claude
@@ -204,55 +74,5 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ env.GITHUB_TOKEN }}
-          prompt: |
-            ## Conversation History and Context
-
-            You are responding to a GitHub conversation. Please review the conversation history below to understand what has already been discussed and avoid repeating the same analysis or suggestions.
-
-            ${{ steps.context.outputs.conversation_context }}
-
-            ${{ steps.context.outputs.current_request }}
-
-            ## Instructions
-
-            Based on the conversation history above:
-            1. Acknowledge what has already been discussed
-            2. Provide new insights or address the specific new request
-            3. Avoid repeating analysis that has already been provided
-            4. Reference previous comments when relevant
-            5. If this is a follow-up question, answer it directly
-
-            ## Current Event Details
-
-            REPO: ${{ github.repository }}
-            ${{ github.event_name == 'workflow_dispatch' && inputs.prompt || '' }}
-            ${{ github.event_name == 'issues' && format('ISSUE NUMBER: {0}\nAnalyzing new issue: {1}', github.event.issue.number, github.event.issue.body) || '' }}
-            ${{ github.event_name == 'issue_comment' && format('ISSUE NUMBER: {0}\nResponding to comment: {1}', github.event.issue.number, github.event.comment.body) || '' }}
-            ${{ github.event_name == 'pull_request' && format('PR NUMBER: {0}\nAnalyzing PR: {1}', github.event.pull_request.number, github.event.pull_request.body) || '' }}
-            ${{ github.event_name == 'pull_request_review_comment' && format('PR NUMBER: {0}\nResponding to review comment: {1}', github.event.pull_request.number, github.event.comment.body) || '' }}
-            ${{ github.event_name == 'pull_request_review' && format('PR NUMBER: {0}\nResponding to review: {1}', github.event.pull_request.number, github.event.review.body) || '' }}
-
-            ## IMPORTANT: Post Your Response
-
-            After you complete your analysis or tasks, you MUST post your response as a comment:
-
-            For issues and issue comments:
-            - Use: `gh issue comment ${{ github.event.issue.number || '' }} --body "Your response here"`
-
-            For pull requests and PR comments:
-            - Use: `gh pr comment ${{ github.event.pull_request.number || '' }} --body "Your response here"`
-
-            Make sure to format your response with proper markdown and be comprehensive but concise.
-            Always post a comment with your findings, even if you encounter errors or cannot complete a task.
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --track-progress --allowed-tools 'Bash(git:*),Bash(gh:*),Bash(gh issue comment:*),Bash(gh pr comment:*),Edit,Read,Write,Glob,Grep'"
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
-
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
-
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          # claude_args: '--model claude-opus-4-1-20250805 --allowed-tools Bash(gh pr:*)'
+          track_progress: true
+          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10"
