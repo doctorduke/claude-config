@@ -56,7 +56,8 @@
       "Bash(git subtree add:*)",
       "Bash(find:*)",
       "mcp__github__create_issue",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []

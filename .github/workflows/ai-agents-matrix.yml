@@ -1,0 +1,47 @@
+name: AI Agent Matrix
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    outputs:
+      claude: ${{ steps.check.outputs.claude }}
+      codex: ${{ steps.check.outputs.codex }}
+      gemini: ${{ steps.check.outputs.gemini }}
+      coderabbit: ${{ steps.check.outputs.coderabbit }}
+    steps:
+      - id: check
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          echo "claude=$([[ "$COMMENT" == *"@claude"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "codex=$([[ "$COMMENT" == *"@codex"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "gemini=$([[ "$COMMENT" == *"@gemini"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          echo "coderabbit=$([[ "$COMMENT" == *"@coderabbit"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+  claude:
+    needs: dispatch
+    if: needs.dispatch.outputs.claude == 'true'
+    uses: ./.github/workflows/claude.yml
+    secrets: inherit
+
+  codex:
+    needs: dispatch
+    if: needs.dispatch.outputs.codex == 'true'
+    uses: ./.github/workflows/codex.yml
+    secrets: inherit
+
+  gemini:
+    needs: dispatch
+    if: needs.dispatch.outputs.gemini == 'true'
+    uses: ./.github/workflows/gemini.yml
+    secrets: inherit
+
+  # These run in PARALLEL when multiple are mentioned
+  # Each posts with their own identity:
+  # "Claude Bot commented..."
+  # "Codex Bot commented..."
