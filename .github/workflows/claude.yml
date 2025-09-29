@@ -205,9 +205,9 @@ jobs:
 
             ## Your Response Process:
 
-            1. FIRST, create a planning comment file:
-            ```bash
-            cat > /tmp/plan.md << 'EOF'
+            1. FIRST, create a planning comment file using Write tool:
+            Write /tmp/plan.md with content:
+            ```
             ## 🤖 Claude Code Bot Response
 
             I'll help you with that! Here's my plan:
@@ -224,7 +224,6 @@ jobs:
 
             ---
             *🤖 Claude Code Bot • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-            EOF
             ```
 
             2. Post the planning comment:
@@ -234,9 +233,14 @@ jobs:
 
             3. Complete the requested task (implement code, analyze, etc.)
 
-            4. Create your results file:
-            ```bash
-            cat > /tmp/response.md << 'EOF'
+            IMPORTANT ERROR HANDLING: If you encounter ANY errors during task execution:
+            - Create an error report in /tmp/error_response.md using Write tool
+            - Include what failed and any error messages
+            - Post it to the PR/issue so the user knows what happened
+
+            4. Create your results file using Write tool:
+            Write /tmp/response.md with content:
+            ```
             ## 🤖 Claude Code Bot Response
 
             ### ✅ Completed Actions
@@ -250,18 +254,30 @@ jobs:
 
             ---
             *🤖 Claude Code Bot • Powered by [Claude 3.5 Sonnet](https://anthropic.com) • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-            EOF
             ```
 
-            5. FINALLY, post your results:
+            5. ALWAYS post your results (even if there were errors):
             ```bash
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
+
+            6. ERROR FALLBACK: If the main response fails to post, ensure you post an error message:
+            Write /tmp/error.md with:
+            ```
+            ## 🤖 Claude Code Bot - Error Report
+
+            I encountered errors while processing your request. Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+
+            ---
+            *🤖 Claude Code Bot*
+            ```
+            Then: gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/error.md
 
             The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
 
             Remember:
             - Focus on the specific request, not general reviews
             - Use the conversation context to understand what's being discussed
-            - Always post both planning and completion comments
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
+            - ALWAYS post a comment back to the PR/issue, even if errors occur
+            - Use Write tool for creating files, not heredoc syntax
+          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 25 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Bash(echo:*),Read,Edit,Write,MultiEdit,Glob,Grep'"
