@@ -319,8 +319,8 @@ jobs:
       - name: Verify Comment Posted
         if: always() && steps.issue.outputs.number != ''
         run: |
-          # Wait a moment for GitHub to process
-          sleep 2
+          # Wait for GitHub API to propagate the comment
+          sleep 5
 
           # Get the last few comments to verify
           RECENT_COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/comments --jq '.[].body' | tail -5)

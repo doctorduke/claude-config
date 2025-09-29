@@ -182,8 +182,8 @@ jobs:
       - name: Verify Review Posted
         if: always()
         run: |
-          # Wait for GitHub to process
-          sleep 2
+          # Wait for GitHub API to propagate the comment
+          sleep 5
 
           # Check if review was posted
           RECENT_COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[-1].body' 2>/dev/null || echo "")
