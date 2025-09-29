@@ -36,24 +36,29 @@ jobs:
           github-token: ${{ env.GITHUB_TOKEN }}
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            let comment;
+            let issueNumber;
 
-            if (context.eventName === 'issue_comment' || context.eventName === 'issues') {
-              comment = await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: `🤖 Claude is processing your request...\n\n[View workflow run](${runUrl})`
-              });
-              core.setOutput('comment_id', comment.data.id);
+            // Determine the issue/PR number based on the event
+            if (context.eventName === 'issue_comment') {
+              // For issue_comment events, the issue number is in context.issue
+              issueNumber = context.issue.number;
+            } else if (context.eventName === 'issues') {
+              issueNumber = context.payload.issue.number;
             } else if (context.eventName === 'pull_request_review_comment' || context.eventName === 'pull_request_review') {
-              comment = await github.rest.issues.createComment({
+              issueNumber = context.payload.pull_request.number;
+            }
+
+            if (issueNumber) {
+              const comment = await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
+                issue_number: issueNumber,
                 body: `🤖 Claude is processing your request...\n\n[View workflow run](${runUrl})`
               });
+              console.log(`Posted initial comment with ID: ${comment.data.id}`);
               core.setOutput('comment_id', comment.data.id);
+            } else {
+              console.log(`Could not determine issue number for event: ${context.eventName}`);
             }
 
       - name: Checkout repository
@@ -83,23 +88,22 @@ jobs:
             ${{ github.event_name == 'pull_request_review' && github.event.review.body || '' }}
             ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
 
-            CRITICAL: You MUST post your response as a GitHub comment. Execute these exact commands:
+            CRITICAL: You MUST post your response as a GitHub comment.
 
-            For issues (if issue number exists):
+            The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
+
+            Execute this EXACT sequence of commands using the Bash tool:
+
             ```bash
+            # Save your response to a file
             cat > /tmp/response.md << 'EOF'
-            [Your complete response here with markdown formatting]
+            [Put your complete response here with markdown formatting]
             EOF
-            gh issue comment ${{ github.event.issue.number || '0' }} --body-file /tmp/response.md
+
+            # Post the comment - this command MUST be executed
+            gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
 
-            For PRs (if PR number exists):
-            ```bash
-            cat > /tmp/response.md << 'EOF'
-            [Your complete response here with markdown formatting]
-            EOF
-            gh pr comment ${{ github.event.pull_request.number || '0' }} --body-file /tmp/response.md
-            ```
-
-            You MUST actually execute the appropriate command above using the Bash tool. Do not just output your response.
+            IMPORTANT: You MUST execute BOTH commands above. First save your response, then post it.
+            The gh issue comment command works for both issues AND pull requests.
           claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
