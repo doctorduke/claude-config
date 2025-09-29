@@ -46,11 +46,18 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
-            Review this PR and provide feedback on code quality, bugs, performance, security, and test coverage.
+            Review PR #${{ github.event.pull_request.number }} and provide feedback on code quality, bugs, performance, security, and test coverage.
 
-            IMPORTANT: You MUST post your review as a PR comment using:
-            `gh pr comment ${{ github.event.pull_request.number }} --body "Your review here"`
+            CRITICAL: After completing your review, you MUST execute this exact command with Bash tool:
 
-            Format your review with clear sections and be constructive.
-          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"'
+            First, save your review to a file, then post it:
+            ```bash
+            cat > /tmp/review.md << 'EOF'
+            [Your complete review content here with markdown formatting]
+            EOF
+            gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review.md
+            ```
+
+            The review MUST be posted as a comment on the PR. Do not just output the review - actually run the gh command above.
+          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools "Bash(cat:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Write,Glob,Grep"'
 
