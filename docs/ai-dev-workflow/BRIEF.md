@@ -3,6 +3,11 @@
 ## Purpose & Boundary
 Orchestrates AI coding agents (Claude, Codex, Gemini, Cursor) for automated development workflows. Implements risk-based routing, review chains, and budget controls for PR automation. Submodules: `router/`, `chains/`, `policy/`.
 
+## Spec Snapshot (2025-09-28)
+- Scope: AI agent orchestration with risk-based routing
+- Constraints: Budget caps, token limits, quality gates
+- Release gates: All tests pass, risk assessment complete
+
 ## Interface Contract (Inputs → Outputs)
 
 **Inputs**

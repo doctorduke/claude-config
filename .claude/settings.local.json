@@ -57,7 +57,9 @@
       "Bash(find:*)",
       "mcp__github__create_issue",
       "Bash(mv:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "mcp__github__get_issue",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
