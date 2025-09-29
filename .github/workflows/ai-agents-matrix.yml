@@ -6,6 +6,14 @@ on:
   pull_request_review_comment:
     types: [created]
 
+env:
+  # Control which agents are enabled
+  ENABLE_CLAUDE: 'true'
+  ENABLE_CODEX: 'false'    # Disabled until ready
+  ENABLE_GEMINI: 'false'   # Disabled until ready
+  ENABLE_CODERABBIT: 'false'  # Disabled until ready
+  ENABLE_CURSOR: 'false'   # Disabled - IDE only, not bot
+
 jobs:
   dispatch:
     runs-on: ubuntu-latest
@@ -18,10 +26,30 @@ jobs:
       - id: check
         run: |
           COMMENT="${{ github.event.comment.body }}"
-          echo "claude=$([[ "$COMMENT" == *"@claude"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "codex=$([[ "$COMMENT" == *"@codex"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "gemini=$([[ "$COMMENT" == *"@gemini"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
-          echo "coderabbit=$([[ "$COMMENT" == *"@coderabbit"* ]] && echo true || echo false)" >> $GITHUB_OUTPUT
+          # Check if agent is mentioned AND enabled
+          if [[ "$COMMENT" == *"@claude"* ]] && [[ "${{ env.ENABLE_CLAUDE }}" == "true" ]]; then
+            echo "claude=true" >> $GITHUB_OUTPUT
+          else
+            echo "claude=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "$COMMENT" == *"@codex"* ]] && [[ "${{ env.ENABLE_CODEX }}" == "true" ]]; then
+            echo "codex=true" >> $GITHUB_OUTPUT
+          else
+            echo "codex=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "$COMMENT" == *"@gemini"* ]] && [[ "${{ env.ENABLE_GEMINI }}" == "true" ]]; then
+            echo "gemini=true" >> $GITHUB_OUTPUT
+          else
+            echo "gemini=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ "$COMMENT" == *"@coderabbit"* ]] && [[ "${{ env.ENABLE_CODERABBIT }}" == "true" ]]; then
+            echo "coderabbit=true" >> $GITHUB_OUTPUT
+          else
+            echo "coderabbit=false" >> $GITHUB_OUTPUT
+          fi
 
   claude:
     needs: dispatch
