@@ -85,5 +85,6 @@ jobs:
             - For issues: Use `gh issue comment ${{ github.event.issue.number || '' }} --body "Your response"`
             - For PRs: Use `gh pr comment ${{ github.event.pull_request.number || '' }} --body "Your response"`
 
+            DO NOT use any MCP tools (mcp__github__*). Use only gh CLI commands for all GitHub operations.
             Post a comprehensive response with your findings, even if you encounter errors.
           claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"

@@ -49,6 +49,7 @@ jobs:
             IMPORTANT: You MUST post your review as a PR comment using:
             `gh pr comment ${{ github.event.pull_request.number }} --body "Your review here"`
 
+            DO NOT use any MCP tools (mcp__github__*). Use only gh CLI commands for all GitHub operations.
             Format your review with clear sections and be constructive.
           claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Glob,Grep"'
 
