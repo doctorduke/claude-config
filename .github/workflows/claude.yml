@@ -33,7 +33,7 @@ jobs:
       - name: Post initial comment with job link
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.PAT_GITHUB }}
+          github-token: ${{ env.GITHUB_TOKEN }}
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             let comment;
