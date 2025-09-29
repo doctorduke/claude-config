@@ -93,21 +93,17 @@ jobs:
 
             IMPORTANT: Focus on addressing the specific request above. Do NOT provide a general code review unless specifically asked.
 
-            After completing the requested task, you MUST post your response as a GitHub comment.
-
-            The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
-
-            Execute this EXACT sequence of commands using the Bash tool:
+            CRITICAL: After completing the task, you MUST post a comment. Even if you run out of time, post what you've done:
 
             ```bash
-            # Save your response about the completed task to a file
+            # At the END of your work, ALWAYS execute these two commands:
             cat > /tmp/response.md << 'EOF'
-            [Your response to the specific request above - NOT a code review]
+            [Describe what you did - e.g., "Created PR #X to address this issue" or your response]
             EOF
-
-            # Post the comment - this command MUST be executed
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
 
-            Remember: Respond ONLY to what was asked in the comment. Do not provide a code review unless that was the request.
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 10 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
+            The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
+
+            Remember: Complete the task first, then ALWAYS post the comment before finishing.
+          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
