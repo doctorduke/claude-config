@@ -205,7 +205,7 @@ jobs:
 
             ## Your Response Process:
 
-            1. FIRST, post a planning comment showing what you'll do:
+            1. FIRST, create a planning comment file:
             ```bash
             cat > /tmp/plan.md << 'EOF'
             ## 🤖 Claude Code Bot Response
@@ -225,12 +225,16 @@ jobs:
             ---
             *🤖 Claude Code Bot • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
             EOF
+            ```
+
+            2. Post the planning comment:
+            ```bash
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/plan.md
             ```
 
-            2. Complete the requested task (implement code, analyze, etc.)
+            3. Complete the requested task (implement code, analyze, etc.)
 
-            3. FINALLY, post your results:
+            4. Create your results file:
             ```bash
             cat > /tmp/response.md << 'EOF'
             ## 🤖 Claude Code Bot Response
@@ -247,6 +251,10 @@ jobs:
             ---
             *🤖 Claude Code Bot • Powered by [Claude 3.5 Sonnet](https://anthropic.com) • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
             EOF
+            ```
+
+            5. FINALLY, post your results:
+            ```bash
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
 
