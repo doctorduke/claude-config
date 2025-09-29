@@ -36,6 +36,74 @@ jobs:
           fetch-depth: 1
           token: ${{ env.GITHUB_TOKEN }}
 
+      - name: Setup Review Response Handler
+        run: |
+          # Create helper directory
+          mkdir -p /tmp/claude
+
+          # Create the review posting script
+          cat > /tmp/claude/post-review.sh << 'SCRIPT'
+          #!/bin/bash
+          set -e
+
+          PR_NUMBER=$1
+          OUTPUT_FILE=$2
+
+          echo "Checking for Claude review file..."
+
+          # First priority: Check if Claude created the expected review file
+          if [ -f /tmp/claude_review.md ]; then
+            echo "Found /tmp/claude_review.md - posting to PR"
+            gh pr comment $PR_NUMBER --body-file /tmp/claude_review.md
+            echo "SUCCESS: Posted Claude's review"
+            exit 0
+          fi
+
+          # Second priority: Legacy review.md file
+          if [ -f /tmp/review.md ]; then
+            echo "Found /tmp/review.md - posting to PR"
+            gh pr comment $PR_NUMBER --body-file /tmp/review.md
+            echo "SUCCESS: Posted Claude's review"
+            exit 0
+          fi
+
+          # Fallback: Extract Claude's text response
+          echo "No review file found. Extracting Claude's text response..."
+
+          if [ -f "$OUTPUT_FILE" ]; then
+            CLAUDE_TEXT=$(jq -r '.result // empty' "$OUTPUT_FILE" 2>/dev/null || echo "")
+
+            if [ -n "$CLAUDE_TEXT" ]; then
+              echo "## 🤖 Claude Code Review" > /tmp/fallback_review.md
+              echo "" >> /tmp/fallback_review.md
+              echo "$CLAUDE_TEXT" >> /tmp/fallback_review.md
+              echo "" >> /tmp/fallback_review.md
+              echo "---" >> /tmp/fallback_review.md
+              echo "*🤖 Claude Code Bot • [View workflow](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)*" >> /tmp/fallback_review.md
+
+              gh pr comment $PR_NUMBER --body-file /tmp/fallback_review.md
+              echo "WARNING: Posted fallback review (Claude didn't create expected file)"
+              exit 0
+            fi
+          fi
+
+          # Last resort: Post an error message
+          echo "## 🤖 Claude Code Review - Error" > /tmp/error_review.md
+          echo "" >> /tmp/error_review.md
+          echo "I encountered an error while reviewing this PR." >> /tmp/error_review.md
+          echo "" >> /tmp/error_review.md
+          echo "Please check the [workflow logs](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for details." >> /tmp/error_review.md
+          echo "" >> /tmp/error_review.md
+          echo "---" >> /tmp/error_review.md
+          echo "*🤖 Claude Code Bot*" >> /tmp/error_review.md
+
+          gh pr comment $PR_NUMBER --body-file /tmp/error_review.md
+          echo "ERROR: Posted error message (no review from Claude)"
+          exit 1
+          SCRIPT
+
+          chmod +x /tmp/claude/post-review.sh
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
@@ -46,30 +114,82 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
-            Review PR #${{ github.event.pull_request.number }} and provide feedback on code quality, bugs, performance, security, and test coverage.
+            You are reviewing PR #${{ github.event.pull_request.number }}.
 
-            CRITICAL: After completing your review, you MUST post it to the PR:
+            ## CRITICAL INSTRUCTION
+            You MUST create a review file at `/tmp/claude_review.md` using the Write tool.
+            This is NOT optional. The workflow will fail if you don't create this file.
 
-            1. First, use the Write tool to save your review:
-            Write /tmp/review.md with your complete review content including:
-            - ## 🤖 Claude Code Review
-            - ### Summary
-            - ### Code Quality
-            - ### Potential Issues
-            - ### Suggestions
-            - Bot signature footer
+            ## Review Guidelines
+            1. Analyze the PR changes thoroughly using: gh pr diff ${{ github.event.pull_request.number }}
+            2. Focus on:
+               - Code quality and best practices
+               - Potential bugs or issues
+               - Performance implications
+               - Security considerations
+               - Test coverage
+            3. Write your COMPLETE review to /tmp/claude_review.md
 
-            2. Then post the review:
-            ```bash
-            gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review.md
+            ## Review File Structure
+            Your review file MUST follow this structure:
+            ```
+            ## 🤖 Claude Code Review
+
+            ### Summary
+            [Brief overview of the PR and your assessment]
+
+            ### Code Quality
+            [Comments on code quality, patterns, and practices]
+
+            ### Potential Issues
+            [Any bugs, security issues, or concerns]
+
+            ### Suggestions
+            [Specific improvements or recommendations]
+
+            ### Verdict
+            [Your recommendation: Approve / Request Changes / Comment]
+
+            ---
+            *🤖 Claude Code Bot • Automated PR Review • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
             ```
 
-            3. ERROR HANDLING: If posting fails, create an error report:
-            Write /tmp/error.md with error message, then:
-            ```bash
-            gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/error.md
-            ```
+            Remember: You MUST use the Write tool to create /tmp/claude_review.md
+            Do NOT attempt to post comments yourself - just create the file.
+          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(cat:*),Read,Write,MultiEdit,Glob,Grep"'
 
-            The review MUST be posted as a comment on the PR. Always ensure a comment is posted even if errors occur.
-          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools "Bash(cat:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(echo:*),Read,Write,MultiEdit,Glob,Grep"'
+      - name: Post Claude Review
+        if: always()
+        run: |
+          echo "Attempting to post Claude's review..."
 
+          # The output file from Claude action
+          OUTPUT_FILE="/home/runner/work/_temp/claude-execution-output.json"
+
+          # Call our helper script
+          /tmp/claude/post-review.sh ${{ github.event.pull_request.number }} "$OUTPUT_FILE"
+
+          # Store the exit code
+          EXIT_CODE=$?
+
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "✅ Successfully posted Claude's review"
+          else
+            echo "❌ Failed to post Claude's review"
+            exit 1
+          fi
+
+      - name: Verify Review Posted
+        if: always()
+        run: |
+          # Wait for GitHub to process
+          sleep 2
+
+          # Check if review was posted
+          RECENT_COMMENTS=$(gh pr view ${{ github.event.pull_request.number }} --json comments --jq '.comments[-1].body' 2>/dev/null || echo "")
+
+          if echo "$RECENT_COMMENTS" | grep -q "Claude Code"; then
+            echo "✅ Verified: Claude Code review was posted"
+          else
+            echo "⚠️  Warning: Could not verify Claude Code review"
+          fi
