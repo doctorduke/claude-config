@@ -64,8 +64,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
           token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+          # For PRs, checkout the head branch to see the actual changes
+          ref: ${{ github.event.pull_request && github.event.pull_request.head.ref || github.ref }}
 
       - name: Configure Git
         run: |
@@ -80,6 +82,7 @@ jobs:
           script: |
             let conversationHistory = "";
             let issueNumber = context.issue?.number || context.payload.pull_request?.number;
+            let isPullRequest = false;
 
             if (!issueNumber && context.eventName === 'issue_comment') {
               issueNumber = context.issue.number;
@@ -87,16 +90,44 @@ jobs:
 
             if (issueNumber) {
               try {
-                // Get issue/PR details
-                const issue = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber
-                });
+                // Check if this is actually a PR
+                try {
+                  const pr = await github.rest.pulls.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: issueNumber
+                  });
+                  if (pr.data) {
+                    isPullRequest = true;
+                    conversationHistory += `## Pull Request #${issueNumber}: ${pr.data.title}\n\n`;
+                    conversationHistory += `**Author:** ${pr.data.user.login}\n`;
+                    conversationHistory += `**Branch:** ${pr.data.head.ref} → ${pr.data.base.ref}\n`;
+                    conversationHistory += `**State:** ${pr.data.state} | **Mergeable:** ${pr.data.mergeable}\n`;
+                    conversationHistory += `**Body:**\n${pr.data.body || 'No description'}\n\n`;
 
-                conversationHistory += `## Issue/PR #${issueNumber}: ${issue.data.title}\n\n`;
-                conversationHistory += `**Author:** ${issue.data.user.login}\n`;
-                conversationHistory += `**Body:**\n${issue.data.body || 'No description'}\n\n`;
+                    // Get PR diff for context
+                    conversationHistory += `### Files Changed:\n`;
+                    const files = await github.rest.pulls.listFiles({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: issueNumber
+                    });
+                    files.data.forEach(file => {
+                      conversationHistory += `- ${file.filename} (+${file.additions} -${file.deletions})\n`;
+                    });
+                    conversationHistory += `\n`;
+                  }
+                } catch (e) {
+                  // Not a PR, treat as issue
+                  const issue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber
+                  });
+                  conversationHistory += `## Issue #${issueNumber}: ${issue.data.title}\n\n`;
+                  conversationHistory += `**Author:** ${issue.data.user.login}\n`;
+                  conversationHistory += `**Body:**\n${issue.data.body || 'No description'}\n\n`;
+                }
 
                 // Get all comments
                 const comments = await github.rest.issues.listComments({
@@ -114,7 +145,7 @@ jobs:
                 }
 
                 // For PRs, also get PR review comments
-                if (context.payload.pull_request) {
+                if (isPullRequest) {
                   const prComments = await github.rest.pulls.listReviewComments({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
@@ -155,6 +186,11 @@ jobs:
             First, read the full conversation context:
             ```bash
             cat /tmp/conversation.txt
+            ```
+
+            If this is a PR, you can view the changes with:
+            ```bash
+            gh pr diff ${{ github.event.issue.number || github.event.pull_request.number || '' }}
             ```
 
             ## Current Request:
