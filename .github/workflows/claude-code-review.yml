@@ -3,164 +3,61 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-    
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
 
     env:
       GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Get existing PR reviews and comments
-        id: context
+      - name: Post initial review comment
         uses: actions/github-script@v7
         with:
           github-token: ${{ env.GITHUB_TOKEN }}
           script: |
-            let conversationContext = '';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `🤖 Claude is reviewing this PR...\n\n[View workflow run](${runUrl})`
+            });
 
-            try {
-              // Get PR details
-              const pr = await github.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number
-              });
-
-              // Get all existing comments and reviews
-              const [reviews, issueComments, reviewComments] = await Promise.all([
-                github.rest.pulls.listReviews({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: context.payload.pull_request.number,
-                  per_page: 100
-                }),
-                github.rest.issues.listComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.payload.pull_request.number,
-                  per_page: 100
-                }),
-                github.rest.pulls.listReviewComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: context.payload.pull_request.number,
-                  per_page: 100
-                })
-              ]);
-
-              // Build context of existing reviews
-              if (reviews.data.length > 0 || issueComments.data.length > 0 || reviewComments.data.length > 0) {
-                conversationContext = `## Previous Reviews and Comments\n\n`;
-
-                // Add previous reviews
-                const botReviews = reviews.data.filter(r => r.user.login.includes('bot') && r.body);
-                if (botReviews.length > 0) {
-                  conversationContext += `### Previous Automated Reviews\n`;
-                  botReviews.forEach(r => {
-                    const timestamp = new Date(r.submitted_at).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                    conversationContext += `\n[${timestamp}] ${r.user.login} (${r.state}):\n${r.body}\n---\n`;
-                  });
-                }
-
-                // Add issue comments from bots
-                const botComments = issueComments.data.filter(c => c.user.login.includes('bot'));
-                if (botComments.length > 0) {
-                  conversationContext += `\n### Previous Bot Comments\n`;
-                  botComments.forEach(c => {
-                    const timestamp = new Date(c.created_at).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                    conversationContext += `\n[${timestamp}] ${c.user.login}:\n${c.body.substring(0, 500)}${c.body.length > 500 ? '...' : ''}\n---\n`;
-                  });
-                }
-              }
-
-              // Set output
-              core.setOutput('conversation_context', conversationContext);
-              core.setOutput('pr_title', pr.data.title);
-              core.setOutput('pr_body', pr.data.body || 'No description provided');
-              core.setOutput('pr_author', pr.data.user.login);
-              core.setOutput('pr_stats', `${pr.data.additions} additions, ${pr.data.deletions} deletions across ${pr.data.changed_files} files`);
-
-            } catch (error) {
-              console.error('Error fetching PR context:', error);
-              core.setOutput('conversation_context', '');
-              core.setOutput('pr_title', context.payload.pull_request.title);
-              core.setOutput('pr_body', context.payload.pull_request.body || 'No description provided');
-              core.setOutput('pr_author', context.payload.pull_request.user.login);
-              core.setOutput('pr_stats', '');
-            }
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ env.GITHUB_TOKEN }}
 
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
+          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          github_token: ${{ env.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-            PR TITLE: ${{ steps.context.outputs.pr_title }}
-            PR AUTHOR: @${{ steps.context.outputs.pr_author }}
-            PR STATS: ${{ steps.context.outputs.pr_stats }}
+            Review PR #${{ github.event.pull_request.number }} and provide feedback on code quality, bugs, performance, security, and test coverage.
 
-            ## PR Description
-            ${{ steps.context.outputs.pr_body }}
+            CRITICAL: After completing your review, you MUST execute this exact command with Bash tool:
 
-            ${{ steps.context.outputs.conversation_context }}
+            First, save your review to a file, then post it:
+            ```bash
+            cat > /tmp/review.md << 'EOF'
+            [Your complete review content here with markdown formatting]
+            EOF
+            gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/review.md
+            ```
 
-            ## Review Instructions
-
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-
-            **IMPORTANT**: If you see previous reviews or comments above, please:
-            1. Avoid repeating the same points that have already been made
-            2. Only comment on new issues or provide additional insights
-            3. If the code has been updated since the last review, focus on the changes
-            4. Acknowledge any previous reviews if relevant
-
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR. Start your comment with a brief acknowledgment if this is not the first review.
-
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+            The review MUST be posted as a comment on the PR. Do not just output the review - actually run the gh command above.
+          claude_args: '--model claude-3-5-sonnet-20241022 --max-turns 15 --allowed-tools "Bash(cat:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Write,Glob,Grep"'
 

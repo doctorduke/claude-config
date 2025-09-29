@@ -265,3 +265,25 @@ The repository uses:
 - **Code Splitting**: Platform-specific bundles
 - **Tree Shaking**: Enabled through proper ESM exports
 - **Lazy Loading**: Implemented at route/screen level per platform
+
+## Document Ingestion into BRIEFs
+
+When parsing external documents into BRIEF format:
+1. **Interface-first**: Extract inputs/outputs BEFORE describing implementation
+2. **Module-scoped**: Each BRIEF describes ONLY its module and direct submodules
+3. **Layered**: Keep BRIEF under 200 lines, push details to `_reference/`
+4. **Structured**: Follow exact section ordering from BRIEF v3 schema
+
+### Mapping Matrix
+- Purpose/Problem/Goals → Purpose & Boundary
+- Requirements/User Stories → Interface Contract (Inputs/Outputs)
+- Architecture/Design → Dependencies & Integration Points
+- Roadmap/Backlog → Work State
+- Technical Specs → Push to `_reference/spec/`
+- Decisions/ADRs → Decisions & Rationale
+
+### Red Flags to Avoid
+- Starting with "what it does" instead of "what goes in/out"
+- Generic descriptions instead of specific interfaces
+- Mixing module scope with app-wide concerns
+- Including implementation details in BRIEF
