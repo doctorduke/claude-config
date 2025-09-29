@@ -72,6 +72,73 @@ jobs:
           git config --global user.email "claude-bot@anthropic.com"
           git config --global user.name "Claude Code Bot"
 
+      - name: Gather conversation context
+        id: context
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ env.GITHUB_TOKEN }}
+          script: |
+            let conversationHistory = "";
+            let issueNumber = context.issue?.number || context.payload.pull_request?.number;
+
+            if (!issueNumber && context.eventName === 'issue_comment') {
+              issueNumber = context.issue.number;
+            }
+
+            if (issueNumber) {
+              try {
+                // Get issue/PR details
+                const issue = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                });
+
+                conversationHistory += `## Issue/PR #${issueNumber}: ${issue.data.title}\n\n`;
+                conversationHistory += `**Author:** ${issue.data.user.login}\n`;
+                conversationHistory += `**Body:**\n${issue.data.body || 'No description'}\n\n`;
+
+                // Get all comments
+                const comments = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                });
+
+                if (comments.data.length > 0) {
+                  conversationHistory += "## Previous Comments:\n\n";
+                  comments.data.forEach(comment => {
+                    conversationHistory += `**${comment.user.login}** (${new Date(comment.created_at).toLocaleString()}):\n`;
+                    conversationHistory += `${comment.body}\n\n---\n\n`;
+                  });
+                }
+
+                // For PRs, also get PR review comments
+                if (context.payload.pull_request) {
+                  const prComments = await github.rest.pulls.listReviewComments({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: issueNumber
+                  });
+
+                  if (prComments.data.length > 0) {
+                    conversationHistory += "## Code Review Comments:\n\n";
+                    prComments.data.forEach(comment => {
+                      conversationHistory += `**${comment.user.login}** on ${comment.path}:\n`;
+                      conversationHistory += `${comment.body}\n\n`;
+                    });
+                  }
+                }
+              } catch (error) {
+                console.log("Error gathering context:", error);
+              }
+            }
+
+            // Save to file to avoid escaping issues
+            const fs = require('fs');
+            fs.writeFileSync('/tmp/conversation.txt', conversationHistory);
+            console.log("Conversation context saved to /tmp/conversation.txt");
+
 
       - name: Run Claude Code
         id: claude
@@ -83,7 +150,14 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.PAT_GITHUB }}
           prompt: |
-            You are responding to this GitHub comment/request:
+            You are Claude Code Bot, an AI assistant helping with GitHub issues and pull requests.
+
+            First, read the full conversation context:
+            ```bash
+            cat /tmp/conversation.txt
+            ```
+
+            ## Current Request:
             """
             ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
             ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
@@ -91,19 +165,59 @@ jobs:
             ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
             """
 
-            IMPORTANT: Focus on addressing the specific request above. Do NOT provide a general code review unless specifically asked.
+            IMPORTANT: You have the FULL conversation history above. Use it to understand the context and respond appropriately.
 
-            CRITICAL: After completing the task, you MUST post a comment. Even if you run out of time, post what you've done:
+            ## Your Response Process:
 
+            1. FIRST, post a planning comment showing what you'll do:
             ```bash
-            # At the END of your work, ALWAYS execute these two commands:
+            cat > /tmp/plan.md << 'EOF'
+            ## 🤖 Claude Code Bot Response
+
+            I'll help you with that! Here's my plan:
+
+            ### 📋 Task Analysis
+            [Briefly describe what was requested]
+
+            ### ✅ Planned Actions
+            - [ ] [Step 1 description]
+            - [ ] [Step 2 description]
+            - [ ] [Step 3 description]
+
+            I'll update this comment as I make progress...
+
+            ---
+            *🤖 Claude Code Bot • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+            EOF
+            gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/plan.md
+            ```
+
+            2. Complete the requested task (implement code, analyze, etc.)
+
+            3. FINALLY, post your results:
+            ```bash
             cat > /tmp/response.md << 'EOF'
-            [Describe what you did - e.g., "Created PR #X to address this issue" or your response]
+            ## 🤖 Claude Code Bot Response
+
+            ### ✅ Completed Actions
+            [Describe what you accomplished]
+
+            ### 📊 Results
+            [Details of what was done - PRs created, code analyzed, etc.]
+
+            ### 📝 Notes
+            [Any additional context or next steps]
+
+            ---
+            *🤖 Claude Code Bot • Powered by [Claude 3.5 Sonnet](https://anthropic.com) • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
             EOF
             gh issue comment ${{ github.event.issue.number || github.event.pull_request.number || '' }} --body-file /tmp/response.md
             ```
 
             The issue/PR number is: ${{ github.event.issue.number || github.event.pull_request.number || '' }}
 
-            Remember: Complete the task first, then ALWAYS post the comment before finishing.
+            Remember:
+            - Focus on the specific request, not general reviews
+            - Use the conversation context to understand what's being discussed
+            - Always post both planning and completion comments
           claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 20 --allowed-tools 'Bash(cat:*),Bash(gh pr comment:*),Bash(gh issue comment:*),Bash(gh:*),Bash(git:*),Read,Edit,Write,Glob,Grep'"
