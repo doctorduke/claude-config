@@ -53,6 +53,7 @@ thresholds:
 - **Patch Lines (0.20)**: Size correlates with complexity and risk
 - **Static Analysis (0.20)**: Automated security/quality findings
 - **Coverage Drop (0.15)**: Test coverage is important but not critical
+- **Changed Endpoints (0.10)**: API changes require careful review for breaking changes
 - **Confidence (0.10)**: Agent confidence is useful but not primary factor
 
 ## Consequences
@@ -89,7 +90,7 @@ thresholds:
 
 - ADR-002: Validation Gate Design
 - ADR-003: Brief Modularization Strategy
-- ADR-004: Token Budget Management
+- ADR-004: Design Documentation Ingestion Strategy
 
 ## References
 

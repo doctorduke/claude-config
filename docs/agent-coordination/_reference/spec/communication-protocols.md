@@ -157,6 +157,53 @@ interface ResourceUsage {
   cpu_usage: number;           // 0-100
   memory_usage: number;        // 0-100
 }
+
+interface HealthMetrics {
+  uptime_seconds: number;
+  success_rate: number;        // 0-1
+  avg_latency_ms: number;
+  error_count: number;
+  last_error?: Date;
+}
+
+enum AgentState {
+  IDLE = 'IDLE',
+  BUSY = 'BUSY',
+  ERROR = 'ERROR',
+  OFFLINE = 'OFFLINE',
+  MAINTENANCE = 'MAINTENANCE'
+}
+
+interface TaskContext {
+  task_id: string;
+  task_type: string;
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  metadata: Record<string, any>;
+  dependencies: string[];
+  history: TaskEvent[];
+}
+
+interface TaskConstraints {
+  max_tokens?: number;
+  deadline?: Date;
+  required_capabilities: string[];
+  budget_usd?: number;
+  quality_threshold?: number;
+}
+
+interface ResourceReference {
+  type: 'documentation' | 'code' | 'api' | 'example' | 'tool';
+  url: string;
+  title: string;
+  description?: string;
+}
+
+interface TaskEvent {
+  timestamp: Date;
+  event_type: string;
+  agent_id?: string;
+  details: Record<string, any>;
+}
 ```
 
 ## Error Reporting Protocol
@@ -179,6 +226,25 @@ interface ErrorReport {
   };
   recovery_attempts: RecoveryAttempt[];
   suggested_actions: string[];
+}
+
+enum ErrorType {
+  TIMEOUT = 'TIMEOUT',
+  RATE_LIMIT = 'RATE_LIMIT',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  RESOURCE_EXHAUSTED = 'RESOURCE_EXHAUSTED',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR'
+}
+
+interface RecoveryAttempt {
+  attempt_number: number;
+  timestamp: Date;
+  strategy: string;
+  outcome: 'success' | 'failure' | 'partial';
+  details: string;
 }
 ```
 
@@ -221,6 +287,45 @@ interface SharedState {
   resource_allocations: Map<string, ResourceAllocation>;
   policy_state: PolicyState;
   last_updated: Date;
+}
+
+interface TaskState {
+  id: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled';
+  assigned_agent?: string;
+  created_at: Date;
+  updated_at: Date;
+  context: TaskContext;
+  result?: any;
+  error?: ErrorReport;
+}
+
+interface ResourceAllocation {
+  agent_id: string;
+  resource_type: 'tokens' | 'cpu' | 'memory' | 'budget';
+  allocated: number;
+  consumed: number;
+  limit: number;
+  expires_at?: Date;
+}
+
+interface PolicyState {
+  version: string;
+  enabled_chains: string[];
+  risk_thresholds: {
+    low: number;
+    high: number;
+  };
+  budget_limits: {
+    per_task: number;
+    per_agent: number;
+    total: number;
+  };
+  circuit_breaker_config: {
+    error_threshold: number;
+    timeout_ms: number;
+    reset_timeout_ms: number;
+  };
 }
 ```
 

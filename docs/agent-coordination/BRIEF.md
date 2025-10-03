@@ -90,20 +90,11 @@ Orchestrates AI coding agents (Claude, Codex, Gemini, Cursor) for automated deve
 
 ## Local Reference Index
 
-- **routing/** → Risk-based agent selection
-  - `risk-scoring.ts` - Risk calculation algorithms
-  - `agent-selection.ts` - Agent routing logic
-  - `decision-table.md` - Routing decision matrix
-- **chains/** → Escalation and review workflows
-  - `chain-a.ts` - Low risk automation chain
-  - `chain-b.ts` - Medium risk review chain
-  - `chain-c.ts` - High risk human gate chain
-- **policy/** → Configuration and rules
-  - `policy-schema.yaml` - Policy configuration schema
-  - `budget-rules.ts` - Budget management logic
-- **communication/** → Inter-agent protocols
-  - `handoff-protocols.md` - Task handoff standards
-  - `message-formats.ts` - Agent communication schemas
+- **_reference/spec/routing-logic.md** → Risk-based agent selection and routing logic
+- **_reference/spec/state-machines.md** → Task, agent, and workflow state machine definitions
+- **_reference/spec/communication-protocols.md** → Inter-agent messaging formats and protocols
+- **_reference/implementation/agent-selection.md** → Implementation details for agent selection algorithms
+- **_reference/implementation/task-handoff.md** → Implementation details for task handoff protocols
 
 ## Answer Pack
 

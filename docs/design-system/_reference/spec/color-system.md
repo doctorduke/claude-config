@@ -153,12 +153,18 @@ const colors = {
     500: '#0ea5e9',
     600: '#0284c7',
     // ... rest of palette
+  },
+  neutral: {
+    50: '#f8fafc',
+    // ... rest of palette
   }
 };
 
 const styles = StyleSheet.create({
   buttonPrimary: {
     backgroundColor: colors.primary[500],
+  },
+  buttonPrimaryText: {
     color: colors.neutral[50],
   },
 });
