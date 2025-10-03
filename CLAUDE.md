@@ -309,6 +309,26 @@ When parsing external documents into BRIEF format:
 - Including implementation details in BRIEF
 - Creating monolithic documents instead of modular structure
 
+### Work Item ID Convention
+
+Work items in BRIEFs follow the pattern `[MODULE-NNN]` where:
+- **MODULE**: 2-4 letter module prefix
+- **NNN**: Zero-padded 3-digit number (001, 002, etc.)
+
+**Module Prefixes**:
+- `ORC` - Agent orchestration/coordination (docs/agent-coordination)
+- `VAL` - Validation framework (tools/validation-framework)
+- `DS` - Design system (docs/design-system)
+- `UTIL` - Shared utilities (shared/utils)
+- `API` - API client (shared/api-client)
+
+**Examples**: `[ORC-001]`, `[VAL-004]`, `[DS-002]`
+
+**Work State Categories**:
+- **Planned**: Future work items with targets
+- **Doing**: Active work items with start dates
+- **Done**: Completed work items with completion dates
+
 ### Design Documentation Ingestion
 
 For design documentation ingestion:

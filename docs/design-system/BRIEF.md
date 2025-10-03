@@ -87,24 +87,19 @@ Comprehensive design system providing unified visual language, interaction patte
 
 ## Local Reference Index
 
-- **visual-identity/** → Brand and visual elements
-  - `colors.md` - Color palette and usage guidelines
+**Note**: This is a sample/pilot design system BRIEF. Reference structure reflects planned organization.
+
+- **_reference/spec/** → Design specifications (current)
+  - `color-system.md` - Color palette and usage guidelines
+  - `component-specifications.md` - Component specs (Button, Input, Card)
+- **_reference/spec/** → Planned specifications
   - `typography.md` - Font families, sizes, and hierarchy
   - `spacing.md` - Spacing scale and layout grid
   - `icons.md` - Icon system and usage patterns
-- **component-library/** → Reusable UI components
-  - `button.md` - Button variants and states
-  - `input.md` - Form input components
-  - `card.md` - Card layout components
-  - `navigation.md` - Navigation patterns
-- **interaction-patterns/** → User interactions
   - `gestures.md` - Touch and gesture patterns
   - `animations.md` - Animation guidelines
   - `transitions.md` - State transition patterns
-- **accessibility/** → Accessibility standards
-  - `guidelines.md` - WCAG compliance guidelines
-  - `testing.md` - Accessibility testing procedures
-  - `tools.md` - Accessibility testing tools
+  - `accessibility.md` - WCAG compliance guidelines
 
 ## Answer Pack
 
