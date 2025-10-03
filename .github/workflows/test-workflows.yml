@@ -35,47 +35,16 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install dependencies
-        run: |
-          npm install -g js-yaml
-          npm install -g @actions/github-script
+        run: pnpm install --frozen-lockfile
 
-      - name: Validate YAML syntax
-        run: |
-          echo "🔍 Validating workflow YAML syntax..."
-          for workflow in .github/workflows/*.yml; do
-            if [ -f "$workflow" ]; then
-              echo "Checking $workflow..."
-              if js-yaml "$workflow" > /dev/null 2>&1; then
-                echo "✅ $workflow - Valid YAML"
-              else
-                echo "❌ $workflow - Invalid YAML"
-                exit 1
-              fi
-            fi
-          done
-
-      - name: Check workflow references
-        run: |
-          echo "🔗 Checking workflow references..."
-          for workflow in .github/workflows/*.yml; do
-            if [ -f "$workflow" ]; then
-              echo "Checking references in $workflow..."
-              # Check for uses: references to other workflows
-              if grep -q "uses: \./" "$workflow"; then
-                echo "Found workflow references in $workflow:"
-                grep "uses: \./" "$workflow" | while read -r line; do
-                  referenced_workflow=$(echo "$line" | sed 's/.*uses: \.//' | sed 's/.*\///')
-                  if [ -f ".github/workflows/$referenced_workflow" ]; then
-                    echo "  ✅ $referenced_workflow exists"
-                  else
-                    echo "  ❌ $referenced_workflow missing"
-                    exit 1
-                  fi
-                done
-              fi
-            fi
-          done
+      - name: Validate workflows
+        run: pnpm test:workflows
 
   test-with-act:
     runs-on: ubuntu-latest
