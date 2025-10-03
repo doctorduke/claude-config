@@ -268,6 +268,26 @@ The repository uses:
 
 ## Document Ingestion into BRIEFs
 
+The project now uses a **modular brief system** with three-tier documentation:
+
+### 1. BRIEF.md (Module Overview)
+- **Purpose**: Agent-facing, normative overview of each module
+- **Length**: <200 lines maximum
+- **Structure**: Interface Contract → Spec Snapshot → Work State → Local Reference Index
+- **Location**: Every directory with code or configuration
+
+### 2. _reference/ (Deep Dive)
+- **Purpose**: Detailed specifications and implementation guides
+- **Structure**: `_reference/spec/` and `_reference/implementation/`
+- **Content**: Technical details, ADRs, diagrams, examples
+
+### 3. ADR System (Architecture Decisions)
+- **Purpose**: Capture important architectural decisions
+- **Location**: `_reference/adr/ADR-XXX-decision-name.md`
+- **Format**: Context → Decision → Rationale → Consequences
+
+### Document Ingestion Process
+
 When parsing external documents into BRIEF format:
 1. **Interface-first**: Extract inputs/outputs BEFORE describing implementation
 2. **Module-scoped**: Each BRIEF describes ONLY its module and direct submodules
@@ -280,10 +300,19 @@ When parsing external documents into BRIEF format:
 - Architecture/Design → Dependencies & Integration Points
 - Roadmap/Backlog → Work State
 - Technical Specs → Push to `_reference/spec/`
-- Decisions/ADRs → Decisions & Rationale
+- Decisions/ADRs → `_reference/adr/` (separate ADR files)
 
 ### Red Flags to Avoid
 - Starting with "what it does" instead of "what goes in/out"
 - Generic descriptions instead of specific interfaces
 - Mixing module scope with app-wide concerns
 - Including implementation details in BRIEF
+- Creating monolithic documents instead of modular structure
+
+### Design Documentation Ingestion
+
+For design documentation ingestion:
+1. **Domain-based**: Group by design domain (UI, UX, Architecture, Business)
+2. **Cross-linking**: Link design BRIEFs with technical implementation BRIEFs
+3. **Reference depth**: Move detailed design specs to `_reference/` directories
+4. **AI consumption**: Include YAML answer packs for agent consumption
