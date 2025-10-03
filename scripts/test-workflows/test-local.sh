@@ -41,8 +41,10 @@ test_workflow() {
 
     echo -e "\n${BLUE}🔍 Testing $(basename "$workflow_file")${NC}"
 
-    # Create test event based on event type
-    local event_file="/tmp/test-event-$(basename "$workflow_file" .yml).json"
+    # Create a secure temporary file for the event payload
+    local event_file
+    event_file=$(mktemp)
+    trap 'rm -f -- "$event_file"' RETURN
 
     case "$event_type" in
         "issue_comment")
@@ -118,38 +120,15 @@ EOF
         fi
     fi
 
-    # Cleanup
-    rm -f "$event_file"
+    # Cleanup handled by trap
 }
 
 # Function to validate workflow syntax
 validate_workflows() {
     echo -e "\n${BLUE}🔍 Validating workflow syntax${NC}"
-
-    if ! command -v js-yaml &> /dev/null; then
-        echo "Installing js-yaml for validation..."
-        npm install -g js-yaml
-    fi
-
-    local has_errors=false
-
-    for workflow in .github/workflows/*.yml; do
-        if [ -f "$workflow" ]; then
-            echo "Checking $(basename "$workflow")..."
-            if js-yaml "$workflow" > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ $(basename "$workflow") - Valid YAML${NC}"
-            else
-                echo -e "${RED}❌ $(basename "$workflow") - Invalid YAML${NC}"
-                has_errors=true
-            fi
-        fi
-    done
-
-    if [ "$has_errors" = true ]; then
-        echo -e "${RED}❌ Some workflows have syntax errors${NC}"
+    if ! pnpm test:workflows; then
+        echo -e "${RED}❌ Workflow validation failed. Exiting.${NC}"
         return 1
-    else
-        echo -e "${GREEN}✅ All workflows have valid syntax${NC}"
     fi
 }
 

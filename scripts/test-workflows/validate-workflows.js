@@ -37,33 +37,49 @@ function validateWorkflowReferences(workflowPath) {
   const content = fs.readFileSync(workflowPath, 'utf8');
   const workflow = yaml.load(content);
   const issues = [];
+  const foundSecrets = new Set();
 
-  // Check for uses: references to other workflows
-  const usesMatches = content.match(/uses:\s*\.\/\.github\/workflows\/([^\s]+)/g);
-  if (usesMatches) {
-    usesMatches.forEach(match => {
-      const referencedWorkflow = match.match(/\.\/\.github\/workflows\/([^\s]+)/)[1];
-      const referencedPath = path.join('.github', 'workflows', referencedWorkflow);
+  // Recursive function to traverse the YAML object
+  function traverse(obj) {
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
 
-      if (!fs.existsSync(referencedPath)) {
-        issues.push(`Missing referenced workflow: ${referencedWorkflow}`);
+        // Check for workflow references (uses: ./.github/workflows/...)
+        if (key === 'uses' && typeof value === 'string' && value.startsWith('./.github/workflows/')) {
+          const referencedWorkflow = value.substring('./.github/workflows/'.length);
+          const referencedPath = path.join('.github', 'workflows', referencedWorkflow);
+
+          if (!fs.existsSync(referencedPath)) {
+            issues.push(`Missing referenced workflow: ${referencedWorkflow}`);
+          }
+        }
+        // Check for secrets in any string value
+        else if (typeof value === 'string') {
+          const matches = value.matchAll(/\$\{\{\s*secrets\.([^\s}]+)\s*\}\}/g);
+          for (const match of matches) {
+            foundSecrets.add(match[1]);
+          }
+        }
+
+        // Recursively traverse nested objects and arrays
+        if (typeof value === 'object' && value !== null) {
+          traverse(value);
+        }
       }
-    });
+    }
   }
 
-  // Check for required secrets
-  const secretMatches = content.match(/\${{ secrets\.([^}]+) }}/g);
-  if (secretMatches) {
-    const secrets = secretMatches.map(match => match.match(/\${{ secrets\.([^}]+) }}/)[1]);
-    const uniqueSecrets = [...new Set(secrets)];
+  traverse(workflow);
 
-    // Common secrets that should exist (only warn in local development)
+  // Check for required secrets (warn only, don't fail)
+  if (foundSecrets.size > 0) {
+    const uniqueSecrets = [...foundSecrets];
     const commonSecrets = ['PAT_GITHUB', 'CLAUDE_CODE_OAUTH_TOKEN'];
     const missingSecrets = uniqueSecrets.filter(secret =>
       commonSecrets.includes(secret) && !process.env[`GITHUB_${secret}`]
     );
 
-    // Only warn about missing secrets in local development, don't fail
     if (missingSecrets.length > 0 && process.env.NODE_ENV !== 'production') {
       console.log(`⚠️  Missing environment variables for secrets: ${missingSecrets.join(', ')} (local development - not failing)`);
     }

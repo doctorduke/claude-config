@@ -7,8 +7,8 @@
 # Bind working directory to container (faster than copying)
 --bind
 
-# Use specific actor (can be overridden)
---actor doctorduke
+# Use default actor (can be overridden via CLI)
+--actor nektos/act-bot
 
 # Enable verbose output for debugging
 --verbose

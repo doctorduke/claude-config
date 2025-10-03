@@ -24,7 +24,10 @@ We use a comprehensive testing approach that includes:
 2. **act** - GitHub Actions local runner
    ```bash
    # Install act
-   curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+   # Install act (download and inspect before executing)
+   curl -sS https://raw.githubusercontent.com/nektos/act/master/install.sh -o act_install.sh
+   # IMPORTANT: Inspect act_install.sh before running it
+   sudo bash act_install.sh
 
    # Or via Homebrew:
    brew install act
@@ -162,6 +165,7 @@ export GITHUB_GEMINI_API_KEY="your-gemini-key"
 4. **Missing secrets**
    ```bash
    # Create .secrets file for act
+   # ⚠️ IMPORTANT: Never commit .secrets to git! Add to .gitignore
    echo "PAT_GITHUB=your-token" > .secrets
    act --secret-file .secrets
    ```

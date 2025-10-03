@@ -10,6 +10,7 @@
 # Secrets
 *.key
 *.pem
+.secrets
 
 # Node
 node_modules
