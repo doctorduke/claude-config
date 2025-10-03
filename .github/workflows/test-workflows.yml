@@ -1,0 +1,158 @@
+name: Test Workflows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/test-workflows/**'
+  workflow_dispatch:
+    inputs:
+      workflow_name:
+        description: 'Specific workflow to test (leave empty for all)'
+        required: false
+        type: string
+      event_type:
+        description: 'Event type to simulate'
+        required: false
+        default: 'push'
+        type: choice
+        options:
+          - push
+          - pull_request
+          - issue_comment
+          - pull_request_review_comment
+
+jobs:
+  validate-workflows:
+    runs-on: ubuntu-latest
+    name: Validate Workflow Syntax
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install -g js-yaml
+          npm install -g @actions/github-script
+
+      - name: Validate YAML syntax
+        run: |
+          echo "🔍 Validating workflow YAML syntax..."
+          for workflow in .github/workflows/*.yml; do
+            if [ -f "$workflow" ]; then
+              echo "Checking $workflow..."
+              if js-yaml "$workflow" > /dev/null 2>&1; then
+                echo "✅ $workflow - Valid YAML"
+              else
+                echo "❌ $workflow - Invalid YAML"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Check workflow references
+        run: |
+          echo "🔗 Checking workflow references..."
+          for workflow in .github/workflows/*.yml; do
+            if [ -f "$workflow" ]; then
+              echo "Checking references in $workflow..."
+              # Check for uses: references to other workflows
+              if grep -q "uses: \./" "$workflow"; then
+                echo "Found workflow references in $workflow:"
+                grep "uses: \./" "$workflow" | while read -r line; do
+                  referenced_workflow=$(echo "$line" | sed 's/.*uses: \.//' | sed 's/.*\///')
+                  if [ -f ".github/workflows/$referenced_workflow" ]; then
+                    echo "  ✅ $referenced_workflow exists"
+                  else
+                    echo "  ❌ $referenced_workflow missing"
+                    exit 1
+                  fi
+                done
+              fi
+            fi
+          done
+
+  test-with-act:
+    runs-on: ubuntu-latest
+    name: Test with Act (Dry Run)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup act
+        run: |
+          curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+      - name: List available workflows
+        run: |
+          echo "📋 Available workflows:"
+          act --list
+
+      - name: Test specific workflow
+        if: github.event.inputs.workflow_name != ''
+        run: |
+          echo "🧪 Testing workflow: ${{ github.event.inputs.workflow_name }}"
+          act -W .github/workflows/${{ github.event.inputs.workflow_name }} --dryrun --container-architecture linux/amd64
+
+      - name: Test all workflows (dry run)
+        if: github.event.inputs.workflow_name == ''
+        run: |
+          echo "🧪 Testing all workflows (dry run)..."
+          for workflow in .github/workflows/*.yml; do
+            if [ -f "$workflow" ]; then
+              echo "Testing $(basename "$workflow")..."
+              act -W "$workflow" --dryrun --container-architecture linux/amd64 || echo "⚠️  $workflow had issues (may be expected for some workflows)"
+            fi
+          done
+
+  test-matrix-workflow:
+    runs-on: ubuntu-latest
+    name: Test AI Agents Matrix Workflow
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && contains(github.event.pull_request.changed_files, '.github/workflows/ai-agents-matrix.yml'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup act
+        run: |
+          curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+      - name: Create test event
+        run: |
+          mkdir -p /tmp/test-events
+          cat > /tmp/test-events/issue_comment.json << 'EOF'
+          {
+            "comment": {
+              "body": "@claude test the matrix workflow",
+              "user": {
+                "login": "testuser"
+              }
+            },
+            "issue": {
+              "number": 123
+            }
+          }
+          EOF
+
+      - name: Test matrix workflow with @claude
+        run: |
+          echo "🤖 Testing AI Agents Matrix with @claude mention..."
+          act -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/issue_comment.json --dryrun --container-architecture linux/amd64
+
+      - name: Test matrix workflow with @codex
+        run: |
+          echo "🤖 Testing AI Agents Matrix with @codex mention..."
+          echo '{"comment": {"body": "@codex test the matrix workflow"}, "issue": {"number": 123}}' > /tmp/test-events/codex_comment.json
+          act -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/codex_comment.json --dryrun --container-architecture linux/amd64
+
+      - name: Test matrix workflow with @gemini
+        run: |
+          echo "🤖 Testing AI Agents Matrix with @gemini mention..."
+          echo '{"comment": {"body": "@gemini test the matrix workflow"}, "issue": {"number": 123}}' > /tmp/test-events/gemini_comment.json
+          act -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/gemini_comment.json --dryrun --container-architecture linux/amd64
