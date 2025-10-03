@@ -38,27 +38,27 @@ interface AgentCapabilities {
 function selectAgent(task: AgentTask, availableAgents: AgentCapabilities[]): AgentSelection {
   const risk = calculateRiskScore(task);
   const domain = extractDomain(task);
-  
+
   // Filter agents by availability and capability
-  const candidates = availableAgents.filter(agent => 
+  const candidates = availableAgents.filter(agent =>
     agent.domains.includes(domain) &&
     isAgentAvailable(agent) &&
     hasRequiredCapabilities(agent, task)
   );
-  
+
   if (candidates.length === 0) {
     return selectFallbackAgent(task, availableAgents);
   }
-  
+
   // Score candidates based on multiple factors
   const scored = candidates.map(agent => ({
     agent,
     score: calculateAgentScore(agent, task, risk)
   }));
-  
+
   // Sort by score and select best match
   scored.sort((a, b) => b.score - a.score);
-  
+
   return {
     primary: scored[0].agent.agent_id,
     fallback: scored[1]?.agent.agent_id,
@@ -72,15 +72,15 @@ function selectAgent(task: AgentTask, availableAgents: AgentCapabilities[]): Age
 
 ```typescript
 function calculateAgentScore(
-  agent: AgentCapabilities, 
-  task: AgentTask, 
+  agent: AgentCapabilities,
+  task: AgentTask,
   risk: number
 ): number {
   const capabilityScore = calculateCapabilityMatch(agent, task);
   const riskScore = calculateRiskMatch(agent, risk);
   const loadScore = calculateLoadBalance(agent);
   const historyScore = calculateHistoricalPerformance(agent, task);
-  
+
   return (
     capabilityScore * 0.4 +
     riskScore * 0.3 +
@@ -111,7 +111,7 @@ interface AgentLoad {
 ```typescript
 function calculateLoadBalance(agent: AgentCapabilities): number {
   const load = getAgentLoad(agent.agent_id);
-  
+
   if (load.utilization_percent >= 90) return 0;
   if (load.utilization_percent >= 70) return 0.5;
   if (load.utilization_percent >= 50) return 0.8;
@@ -136,12 +136,12 @@ const FALLBACK_HIERARCHY = {
 
 ```typescript
 function selectFallbackAgent(
-  task: AgentTask, 
+  task: AgentTask,
   availableAgents: AgentCapabilities[]
 ): AgentSelection {
   const primary = task.assigned_agent;
   const fallbackOptions = FALLBACK_HIERARCHY[primary] || [];
-  
+
   for (const agentType of fallbackOptions) {
     const agent = availableAgents.find(a => a.agent_id === agentType);
     if (agent && isAgentAvailable(agent)) {
@@ -153,7 +153,7 @@ function selectFallbackAgent(
       };
     }
   }
-  
+
   // Emergency fallback to any available agent
   const emergencyAgent = availableAgents.find(a => isAgentAvailable(a));
   return {
@@ -173,7 +173,7 @@ function selectFallbackAgent(
 function isAgentAvailable(agent: AgentCapabilities): boolean {
   const status = getAgentStatus(agent.agent_id);
   const load = getAgentLoad(agent.agent_id);
-  
+
   return (
     status.state === AgentState.IDLE &&
     load.utilization_percent < 90 &&
@@ -188,7 +188,7 @@ function isAgentAvailable(agent: AgentCapabilities): boolean {
 ```typescript
 function isAgentCircuitOpen(agentId: string): boolean {
   const circuit = getCircuitBreakerState(agentId);
-  return circuit.state === 'OPEN' && 
+  return circuit.state === 'OPEN' &&
          Date.now() - circuit.last_failure < circuit.cooldown_ms;
 }
 ```
@@ -219,17 +219,17 @@ interface AgentPerformance {
 
 ```typescript
 function recordSelectionMetrics(
-  selection: AgentSelection, 
-  task: AgentTask, 
+  selection: AgentSelection,
+  task: AgentTask,
   outcome: 'success' | 'failure' | 'timeout'
 ): void {
   const metrics = getSelectionMetrics();
-  
+
   metrics.total_selections++;
   if (outcome === 'success') {
     metrics.successful_selections++;
   }
-  
+
   updateAgentPerformance(selection.primary, task, outcome);
   updateSelectionTime(selection, task);
 }

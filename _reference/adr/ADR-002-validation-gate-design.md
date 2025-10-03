@@ -1,8 +1,8 @@
 # ADR-002: Validation Gate Design
 
-**Date**: 2025-10-02  
-**Status**: Accepted  
-**Deciders**: Development Team, Quality Assurance  
+**Date**: 2025-10-02
+**Status**: Accepted
+**Deciders**: Development Team, Quality Assurance
 
 ## Context
 

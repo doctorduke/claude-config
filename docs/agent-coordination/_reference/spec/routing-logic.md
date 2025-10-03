@@ -30,7 +30,7 @@ score_calculation: "risk_score = Σ(weight[i] * feature[i])"
 ```typescript
 function selectAgent(task: AgentTask): AgentSelection {
   const risk = calculateRiskScore(task);
-  
+
   if (risk < 0.25) {
     return {
       primary: 'cursor',

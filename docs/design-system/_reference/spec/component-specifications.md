@@ -16,7 +16,7 @@ interface ButtonSpec {
     medium: { height: '40px', padding: '8px 16px', fontSize: '16px' };
     large: { height: '48px', padding: '12px 24px', fontSize: '18px' };
   };
-  
+
   // Variants
   variants: {
     primary: {
@@ -35,7 +35,7 @@ interface ButtonSpec {
       border: 'none';
     };
   };
-  
+
   // States
   states: {
     hover: { opacity: '0.9', transform: 'translateY(-1px)' };
@@ -146,7 +146,7 @@ interface InputSpec {
     medium: { height: '40px', padding: '8px 16px', fontSize: '16px' };
     large: { height: '48px', padding: '12px 24px', fontSize: '18px' };
   };
-  
+
   // States
   states: {
     default: {
@@ -212,7 +212,7 @@ interface CardSpec {
       boxShadow: 'none';
     };
   };
-  
+
   // Padding
   padding: {
     small: '12px';
@@ -255,7 +255,7 @@ interface NavigationSpec {
       gap: '8px';
     };
   };
-  
+
   // Link States
   linkStates: {
     default: {
@@ -299,7 +299,7 @@ import { Button } from './Button';
 
 test('Button renders correctly', () => {
   render(<Button variant="primary" size="medium">Click me</Button>);
-  
+
   const button = screen.getByRole('button', { name: /click me/i });
   expect(button).toBeInTheDocument();
   expect(button).toHaveClass('btn-primary', 'btn-medium');
@@ -320,7 +320,7 @@ test('Button has no accessibility violations', async () => {
   const { container } = render(
     <Button variant="primary">Click me</Button>
   );
-  
+
   const results = await axe(container);
   expect(results).toHaveNoViolations();
 });

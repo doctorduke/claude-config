@@ -1,8 +1,8 @@
 # ADR-004: Design Documentation Ingestion Strategy
 
-**Date**: 2025-10-02  
-**Status**: Proposed  
-**Deciders**: Design Team, Documentation Team, AI Architecture Review  
+**Date**: 2025-10-02
+**Status**: Proposed
+**Deciders**: Design Team, Documentation Team, AI Architecture Review
 
 ## Context
 

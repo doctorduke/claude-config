@@ -1,8 +1,8 @@
 # ADR-001: Risk-Based Agent Routing Decision
 
-**Date**: 2025-10-02  
-**Status**: Accepted  
-**Deciders**: Development Team, AI Architecture Review  
+**Date**: 2025-10-02
+**Status**: Accepted
+**Deciders**: Development Team, AI Architecture Review
 
 ## Context
 

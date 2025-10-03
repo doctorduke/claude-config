@@ -12,22 +12,22 @@ class TaskHandoffManager {
     if (!validation.valid) {
       return this.createRejectionResponse(request, validation.reason);
     }
-    
+
     // Check target agent availability
     const targetAgent = await this.getAgentStatus(request.to_agent);
     if (!this.isAgentAvailable(targetAgent)) {
       return this.createRejectionResponse(request, 'Target agent unavailable');
     }
-    
+
     // Prepare handoff context
     const handoffContext = await this.prepareHandoffContext(request);
-    
+
     // Execute handoff
     const result = await this.executeHandoff(request, handoffContext);
-    
+
     // Update task state
     await this.updateTaskState(request.task_id, 'HANDOFF_IN_PROGRESS');
-    
+
     return result;
   }
 }
@@ -50,7 +50,7 @@ async function prepareHandoffContext(request: TaskHandoffRequest): Promise<Hando
   const task = await getTask(request.task_id);
   const artifacts = await getWorkArtifacts(request.task_id);
   const dependencies = await getTaskDependencies(request.task_id);
-  
+
   return {
     task,
     current_state: task.state,
@@ -92,23 +92,23 @@ enum ArtifactType {
 
 ```typescript
 async function transferArtifacts(
-  fromAgent: string, 
-  toAgent: string, 
+  fromAgent: string,
+  toAgent: string,
   artifacts: WorkArtifact[]
 ): Promise<TransferResult> {
   const transferResults: TransferResult[] = [];
-  
+
   for (const artifact of artifacts) {
     try {
       // Serialize artifact for transfer
       const serialized = await serializeArtifact(artifact);
-      
+
       // Transfer to target agent
       const transferId = await initiateTransfer(serialized, toAgent);
-      
+
       // Verify transfer
       const verification = await verifyTransfer(transferId);
-      
+
       transferResults.push({
         artifact_id: artifact.id,
         transfer_id: transferId,
@@ -124,7 +124,7 @@ async function transferArtifacts(
       });
     }
   }
-  
+
   return {
     total_artifacts: artifacts.length,
     successful_transfers: transferResults.filter(r => r.status === 'SUCCESS').length,
@@ -163,11 +163,11 @@ async function resolveDependencies(taskId: string): Promise<DependencyResolution
     blocked: [],
     errors: []
   };
-  
+
   for (const dep of dependencies) {
     try {
       const status = await checkDependencyStatus(dep);
-      
+
       switch (status) {
         case 'RESOLVED':
           resolution.resolved.push(dep);
@@ -189,7 +189,7 @@ async function resolveDependencies(taskId: string): Promise<DependencyResolution
       });
     }
   }
-  
+
   return resolution;
 }
 ```
@@ -214,7 +214,7 @@ const HANDOFF_VALIDATION_RULES: HandoffValidationRule[] = [
       const agent = await getAgentStatus(request.to_agent);
       return {
         valid: agent.state === AgentState.IDLE,
-        message: agent.state === AgentState.IDLE ? 
+        message: agent.state === AgentState.IDLE ?
           'Agent available' : 'Agent not available'
       };
     },
@@ -242,10 +242,10 @@ const HANDOFF_VALIDATION_RULES: HandoffValidationRule[] = [
       const agent = await getAgentStatus(request.to_agent);
       const estimatedTime = await estimateCompletionTime(agent, task);
       const timeRemaining = task.deadline.getTime() - Date.now();
-      
+
       return {
         valid: estimatedTime < timeRemaining,
-        message: estimatedTime < timeRemaining ? 
+        message: estimatedTime < timeRemaining ?
           'Sufficient time available' : 'Insufficient time for completion'
       };
     },
@@ -260,7 +260,7 @@ const HANDOFF_VALIDATION_RULES: HandoffValidationRule[] = [
 
 ```typescript
 async function executeHandoff(
-  request: TaskHandoffRequest, 
+  request: TaskHandoffRequest,
   context: HandoffContext
 ): Promise<TaskHandoffResponse> {
   try {
@@ -270,27 +270,27 @@ async function executeHandoff(
       task_id: request.task_id,
       target_agent: request.to_agent
     });
-    
+
     // Step 2: Transfer work artifacts
     const artifactTransfer = await transferArtifacts(
       request.from_agent,
       request.to_agent,
       context.work_artifacts
     );
-    
+
     // Step 3: Update task assignment
     await updateTaskAssignment(request.task_id, request.to_agent);
-    
+
     // Step 4: Notify target agent
     await notifyAgent(request.to_agent, {
       type: 'TASK_ASSIGNED',
       task_id: request.task_id,
       context: context
     });
-    
+
     // Step 5: Update task state
     await updateTaskState(request.task_id, 'ROUTED');
-    
+
     return {
       accepted: true,
       agent_id: request.to_agent,
@@ -298,11 +298,11 @@ async function executeHandoff(
       requirements: extractRequirements(context),
       constraints: context.constraints
     };
-    
+
   } catch (error) {
     // Rollback on failure
     await rollbackHandoff(request, error);
-    
+
     return {
       accepted: false,
       agent_id: request.to_agent,
@@ -340,32 +340,32 @@ interface AgentHandoffPerformance {
 ```typescript
 class HandoffMonitor {
   async recordHandoff(
-    request: TaskHandoffRequest, 
-    response: TaskHandoffResponse, 
+    request: TaskHandoffRequest,
+    response: TaskHandoffResponse,
     duration_ms: number
   ): Promise<void> {
     const metrics = await this.getHandoffMetrics();
-    
+
     metrics.total_handoffs++;
     if (response.accepted) {
       metrics.successful_handoffs++;
     } else {
       metrics.failed_handoffs++;
     }
-    
+
     metrics.avg_handoff_time_ms = this.calculateAverageTime(
       metrics.avg_handoff_time_ms,
       duration_ms,
       metrics.total_handoffs
     );
-    
+
     // Update reason tracking
     const reason = request.reason;
     metrics.handoff_reasons[reason] = (metrics.handoff_reasons[reason] || 0) + 1;
-    
+
     // Update agent performance
     await this.updateAgentPerformance(request, response, duration_ms);
-    
+
     await this.saveHandoffMetrics(metrics);
   }
 }

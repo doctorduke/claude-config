@@ -1,8 +1,8 @@
 # ADR-003: Brief Modularization Strategy
 
-**Date**: 2025-10-02  
-**Status**: Accepted  
-**Deciders**: Documentation Team, AI Architecture Review  
+**Date**: 2025-10-02
+**Status**: Accepted
+**Deciders**: Documentation Team, AI Architecture Review
 
 ## Context
 
