@@ -9,16 +9,31 @@ on:
     types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+  workflow_call:
+    inputs:
+      timeout_minutes:
+        description: 'Timeout in minutes for the workflow'
+        type: number
+        default: 10
+      max_retries:
+        description: 'Maximum number of retries for verification'
+        type: number
+        default: 5
+      retry_wait_base:
+        description: 'Base wait time in seconds for exponential backoff'
+        type: number
+        default: 2
 
 jobs:
   codex:
     if: |
+      github.event_name == 'workflow_call' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codex')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@codex')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@codex')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@codex') || contains(github.event.issue.title, '@codex')))
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: ${{ inputs.timeout_minutes || 10 }}
     permissions:
       contents: write
       pull-requests: write

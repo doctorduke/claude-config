@@ -9,16 +9,31 @@ on:
     types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+  workflow_call:
+    inputs:
+      timeout_minutes:
+        description: 'Timeout in minutes for the workflow'
+        type: number
+        default: 20
+      max_retries:
+        description: 'Maximum number of retries for verification'
+        type: number
+        default: 5
+      retry_wait_base:
+        description: 'Base wait time in seconds for exponential backoff'
+        type: number
+        default: 2
 
 jobs:
   gemini:
     if: |
+      github.event_name == 'workflow_call' ||
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@gemini')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@gemini') || contains(github.event.issue.title, '@gemini')))
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.timeout_minutes || 20 }}
     permissions:
       contents: write
       pull-requests: write
@@ -243,26 +258,16 @@ jobs:
       - name: Run Gemini Agent
         id: gemini
         run: |
-          # Create a placeholder response for now
-          # In a real implementation, this would call the Gemini API
-          cat > /tmp/gemini_response.md << 'EOF'
-          ## 🤖 Gemini Bot Response
-
-          Hello! I'm Gemini Bot, your AI assistant for code review and issue analysis.
-
-          **Current Status:** Gemini integration is currently being set up. This is a placeholder response.
-
-          **What I can help with:**
-          - Code review and analysis
-          - Issue triage and resolution
-          - Documentation improvements
-          - Technical discussions
-
-          **Note:** Full Gemini API integration is pending. For now, I'm here to acknowledge your request and will be fully functional soon.
-
-          ---
-          *🤖 Gemini Bot • Powered by [Google Gemini](https://ai.google.dev) • [View workflow](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)*
-          EOF
+          echo "❌ ERROR: Gemini integration is not yet implemented"
+          echo "The Gemini agent workflow is currently disabled and under development."
+          echo ""
+          echo "To enable Gemini:"
+          echo "1. Implement Gemini API integration"
+          echo "2. Configure GEMINI_API_KEY secret"
+          echo "3. Set ENABLE_GEMINI='true' in .github/workflows/ai-agents-matrix.yml"
+          echo ""
+          echo "For now, please use @claude which is fully functional."
+          exit 1
 
       - name: Post Gemini Response
         if: always()
@@ -287,17 +292,34 @@ jobs:
 
       - name: Verify Comment Posted
         if: always() && steps.issue.outputs.number != ''
+        env:
+          MAX_RETRIES: ${{ inputs.max_retries || 5 }}
+          RETRY_WAIT_BASE: ${{ inputs.retry_wait_base || 2 }}
         run: |
-          # Wait for GitHub API to propagate the comment
-          sleep 5
+          # Retry verification with exponential backoff
+          RETRY_COUNT=0
+          VERIFIED=false
 
-          # Get the last few comments to verify
-          RECENT_COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/comments --jq '.[].body' | tail -5)
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            # Wait for GitHub API to propagate (exponential backoff)
+            WAIT_TIME=$((RETRY_WAIT_BASE ** (RETRY_COUNT + 1)))
+            echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - waiting ${WAIT_TIME}s for API propagation..."
+            sleep $WAIT_TIME
 
-          if echo "$RECENT_COMMENTS" | grep -q "Gemini Bot"; then
-            echo "✅ Verified: Gemini Bot comment was posted"
-          else
-            echo "⚠️  Warning: Could not verify Gemini Bot comment"
+            # Get the last few comments to verify
+            RECENT_COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/comments --jq '.[].body' | tail -5)
+
+            if echo "$RECENT_COMMENTS" | grep -q "Gemini Bot"; then
+              echo "✅ Verified: Gemini Bot comment was posted"
+              VERIFIED=true
+              break
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+          done
+
+          if [ "$VERIFIED" = false ]; then
+            echo "⚠️  Warning: Could not verify Gemini Bot comment after $MAX_RETRIES attempts"
             echo "Recent comments:"
             echo "$RECENT_COMMENTS"
           fi
