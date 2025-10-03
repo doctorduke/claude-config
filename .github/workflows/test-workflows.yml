@@ -37,8 +37,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -56,7 +54,8 @@ jobs:
 
       - name: Setup act
         run: |
-          curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+          curl -sS https://raw.githubusercontent.com/nektos/act/master/install.sh -o /tmp/act_install.sh
+          sudo bash /tmp/act_install.sh
 
       - name: List available workflows
         run: |
@@ -90,7 +89,8 @@ jobs:
 
       - name: Setup act
         run: |
-          curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+          curl -sS https://raw.githubusercontent.com/nektos/act/master/install.sh -o /tmp/act_install.sh
+          sudo bash /tmp/act_install.sh
 
       - name: Create test event
         run: |
