@@ -56,26 +56,28 @@ jobs:
         run: |
           curl -sS https://raw.githubusercontent.com/nektos/act/master/install.sh -o /tmp/act_install.sh
           sudo bash /tmp/act_install.sh
-          export PATH=$PATH:/usr/local/bin
-          which act || echo "act not found in PATH"
+          sudo mv ./bin/act /usr/local/bin/act || true
+          which act && act --version || echo "act installed at $(find . -name act -type f 2>/dev/null)"
 
       - name: List available workflows
         run: |
           echo "📋 Available workflows:"
-          /usr/local/bin/act --list || act --list
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
+          echo "Using act at: $ACT_CMD"
+          $ACT_CMD --list
 
       - name: Test specific workflow
         if: github.event.inputs.workflow_name != ''
         run: |
           echo "🧪 Testing workflow: ${{ github.event.inputs.workflow_name }}"
-          /usr/local/bin/act -W .github/workflows/${{ github.event.inputs.workflow_name }} --dryrun --container-architecture linux/amd64 || act -W .github/workflows/${{ github.event.inputs.workflow_name }} --dryrun --container-architecture linux/amd64
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
+          $ACT_CMD -W .github/workflows/${{ github.event.inputs.workflow_name }} --dryrun --container-architecture linux/amd64
 
       - name: Test all workflows (dry run)
         if: github.event.inputs.workflow_name == ''
         run: |
           echo "🧪 Testing all workflows (dry run)..."
-          ACT_CMD="/usr/local/bin/act"
-          [ ! -f "$ACT_CMD" ] && ACT_CMD="act"
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
           for workflow in .github/workflows/*.yml; do
             if [ -f "$workflow" ]; then
               echo "Testing $(basename "$workflow")..."
@@ -95,6 +97,7 @@ jobs:
         run: |
           curl -sS https://raw.githubusercontent.com/nektos/act/master/install.sh -o /tmp/act_install.sh
           sudo bash /tmp/act_install.sh
+          sudo mv ./bin/act /usr/local/bin/act || true
 
       - name: Create test event
         run: |
@@ -116,22 +119,19 @@ jobs:
       - name: Test matrix workflow with @claude
         run: |
           echo "🤖 Testing AI Agents Matrix with @claude mention..."
-          ACT_CMD="/usr/local/bin/act"
-          [ ! -f "$ACT_CMD" ] && ACT_CMD="act"
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
           $ACT_CMD -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/issue_comment.json --dryrun --container-architecture linux/amd64
 
       - name: Test matrix workflow with @codex
         run: |
           echo "🤖 Testing AI Agents Matrix with @codex mention..."
-          ACT_CMD="/usr/local/bin/act"
-          [ ! -f "$ACT_CMD" ] && ACT_CMD="act"
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
           echo '{"comment": {"body": "@codex test the matrix workflow"}, "issue": {"number": 123}}' > /tmp/test-events/codex_comment.json
           $ACT_CMD -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/codex_comment.json --dryrun --container-architecture linux/amd64
 
       - name: Test matrix workflow with @gemini
         run: |
           echo "🤖 Testing AI Agents Matrix with @gemini mention..."
-          ACT_CMD="/usr/local/bin/act"
-          [ ! -f "$ACT_CMD" ] && ACT_CMD="act"
+          ACT_CMD="$(which act 2>/dev/null || find $GITHUB_WORKSPACE -name act -type f 2>/dev/null | head -1)"
           echo '{"comment": {"body": "@gemini test the matrix workflow"}, "issue": {"number": 123}}' > /tmp/test-events/gemini_comment.json
           $ACT_CMD -W .github/workflows/ai-agents-matrix.yml -e /tmp/test-events/gemini_comment.json --dryrun --container-architecture linux/amd64
