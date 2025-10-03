@@ -6,6 +6,11 @@ on:
   pull_request_review_comment:
     types: [created]
 
+# Rate limiting: Only one run per issue/PR at a time
+concurrency:
+  group: ai-agents-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 env:
   # Control which agents are enabled
   ENABLE_CLAUDE: 'true'
@@ -23,6 +28,31 @@ jobs:
       gemini: ${{ steps.check.outputs.gemini }}
       coderabbit: ${{ steps.check.outputs.coderabbit }}
     steps:
+      - name: Rate limit check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check comment frequency to prevent spam/abuse
+          ISSUE_NUMBER="${{ github.event.issue.number || github.event.pull_request.number }}"
+          COMMENTER="${{ github.event.comment.user.login }}"
+
+          # Get comments from the last 5 minutes
+          FIVE_MINS_AGO=$(date -u -d '5 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-5M '+%Y-%m-%dT%H:%M:%SZ')
+
+          # Count AI agent mentions by this user in recent comments
+          RECENT_MENTIONS=$(gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments" \
+            --jq "[.[] | select(.user.login == \"${COMMENTER}\" and .created_at > \"${FIVE_MINS_AGO}\") | .body | select(test(\"@(claude|codex|gemini|coderabbit)\"))] | length")
+
+          echo "Recent AI agent mentions by ${COMMENTER}: ${RECENT_MENTIONS}"
+
+          # Allow up to 3 mentions in 5 minutes (configurable)
+          MAX_MENTIONS=3
+          if [ "${RECENT_MENTIONS}" -gt "${MAX_MENTIONS}" ]; then
+            echo "⚠️  Rate limit exceeded: ${RECENT_MENTIONS} mentions in 5 minutes (max: ${MAX_MENTIONS})"
+            echo "Please wait before making additional AI agent requests."
+            exit 1
+          fi
+
       - id: check
         run: |
           COMMENT="${{ github.event.comment.body }}"

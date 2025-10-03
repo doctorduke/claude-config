@@ -1,4 +1,4 @@
-name: Claude Code
+name: Gemini Agent
 
 on:
   issue_comment:
@@ -25,13 +25,13 @@ on:
         default: 2
 
 jobs:
-  claude:
+  gemini:
     if: |
       github.event_name == 'workflow_call' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@gemini')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@gemini')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@gemini') || contains(github.event.issue.title, '@gemini')))
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout_minutes || 20 }}
     permissions:
@@ -69,7 +69,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ steps.issue.outputs.number }},
-              body: `🤖 Claude is processing your request...\n\n[View workflow run](${runUrl})`
+              body: `🤖 Gemini is processing your request...\n\n[View workflow run](${runUrl})`
             });
             console.log(`Posted initial comment with ID: ${comment.data.id}`);
             core.setOutput('comment_id', comment.data.id);
@@ -83,85 +83,85 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config --global user.email "claude-bot@anthropic.com"
-          git config --global user.name "Claude Code Bot"
+          git config --global user.email "gemini-bot@google.com"
+          git config --global user.name "Gemini Bot"
 
-      - name: Setup Claude Response Handler
+      - name: Setup Gemini Response Handler
         run: |
           # Create helper directory
-          mkdir -p /tmp/claude
+          mkdir -p /tmp/gemini
 
           # Create the response posting script
-          cat > /tmp/claude/post-response.sh << 'SCRIPT'
+          cat > /tmp/gemini/post-response.sh << 'SCRIPT'
           #!/bin/bash
           set -e
 
           ISSUE_NUMBER=$1
           OUTPUT_FILE=$2
 
-          echo "Checking for Claude response files..."
+          echo "Checking for Gemini response files..."
 
-          # First priority: Check if Claude created the expected response file
-          if [ -f /tmp/claude_response.md ]; then
-            echo "Found /tmp/claude_response.md - posting to PR/issue"
-            gh issue comment $ISSUE_NUMBER --body-file /tmp/claude_response.md
-            echo "SUCCESS: Posted Claude's response"
+          # First priority: Check if Gemini created the expected response file
+          if [ -f /tmp/gemini_response.md ]; then
+            echo "Found /tmp/gemini_response.md - posting to PR/issue"
+            gh issue comment $ISSUE_NUMBER --body-file /tmp/gemini_response.md
+            echo "SUCCESS: Posted Gemini's response"
             exit 0
           fi
 
-          # Second priority: Check if Claude created a plan file
+          # Second priority: Check if Gemini created a plan file
           if [ -f /tmp/plan.md ]; then
             echo "Found /tmp/plan.md - posting to PR/issue"
             gh issue comment $ISSUE_NUMBER --body-file /tmp/plan.md
-            echo "SUCCESS: Posted Claude's plan"
+            echo "SUCCESS: Posted Gemini's plan"
             exit 0
           fi
 
-          # Third priority: Check if Claude created a response.md file
+          # Third priority: Check if Gemini created a response.md file
           if [ -f /tmp/response.md ]; then
             echo "Found /tmp/response.md - posting to PR/issue"
             gh issue comment $ISSUE_NUMBER --body-file /tmp/response.md
-            echo "SUCCESS: Posted Claude's response"
+            echo "SUCCESS: Posted Gemini's response"
             exit 0
           fi
 
-          # Fallback: Extract Claude's text response from the output
-          echo "No response files found. Extracting Claude's text response..."
+          # Fallback: Extract Gemini's text response from the output
+          echo "No response files found. Extracting Gemini's text response..."
 
           # Try to extract the result from the JSON output
           if [ -f "$OUTPUT_FILE" ]; then
-            CLAUDE_TEXT=$(jq -r '.result // empty' "$OUTPUT_FILE" 2>/dev/null || echo "")
+            GEMINI_TEXT=$(jq -r '.result // empty' "$OUTPUT_FILE" 2>/dev/null || echo "")
 
-            if [ -n "$CLAUDE_TEXT" ]; then
-              echo "## 🤖 Claude Code Bot Response" > /tmp/fallback.md
+            if [ -n "$GEMINI_TEXT" ]; then
+              echo "## 🤖 Gemini Bot Response" > /tmp/fallback.md
               echo "" >> /tmp/fallback.md
-              echo "$CLAUDE_TEXT" >> /tmp/fallback.md
+              echo "$GEMINI_TEXT" >> /tmp/fallback.md
               echo "" >> /tmp/fallback.md
               echo "---" >> /tmp/fallback.md
-              echo "*🤖 Claude Code Bot • [View workflow](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)*" >> /tmp/fallback.md
+              echo "*🤖 Gemini Bot • [View workflow](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)*" >> /tmp/fallback.md
 
               gh issue comment $ISSUE_NUMBER --body-file /tmp/fallback.md
-              echo "WARNING: Posted fallback response (Claude didn't create expected files)"
+              echo "WARNING: Posted fallback response (Gemini didn't create expected files)"
               exit 0
             fi
           fi
 
           # Last resort: Post an error message
-          echo "## 🤖 Claude Code Bot - Error" > /tmp/error.md
+          echo "## 🤖 Gemini Bot - Error" > /tmp/error.md
           echo "" >> /tmp/error.md
-          echo "I encountered an error processing your request. Claude did not generate a response file." >> /tmp/error.md
+          echo "I encountered an error processing your request. Gemini did not generate a response file." >> /tmp/error.md
           echo "" >> /tmp/error.md
           echo "Please check the [workflow logs](https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for details." >> /tmp/error.md
           echo "" >> /tmp/error.md
           echo "---" >> /tmp/error.md
-          echo "*🤖 Claude Code Bot*" >> /tmp/error.md
+          echo "*🤖 Gemini Bot*" >> /tmp/error.md
 
           gh issue comment $ISSUE_NUMBER --body-file /tmp/error.md
-          echo "ERROR: Posted error message (no response from Claude)"
+          echo "ERROR: Posted error message (no response from Gemini)"
           exit 1
           SCRIPT
 
-          chmod +x /tmp/claude/post-response.sh
+          chmod +x /tmp/gemini/post-response.sh
 
       - name: Gather conversation context
         id: context
@@ -255,79 +255,38 @@ jobs:
             fs.writeFileSync('/tmp/conversation.txt', conversationHistory);
             console.log("Conversation context saved to /tmp/conversation.txt");
 
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
-          GH_TOKEN: ${{ secrets.PAT_GITHUB }}
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          github_token: ${{ secrets.PAT_GITHUB }}
-          prompt: |
-            You are Claude Code Bot, an AI assistant helping with GitHub issues and pull requests.
+      - name: Run Gemini Agent
+        id: gemini
+        run: |
+          echo "❌ ERROR: Gemini integration is not yet implemented"
+          echo "The Gemini agent workflow is currently disabled and under development."
+          echo ""
+          echo "To enable Gemini:"
+          echo "1. Implement Gemini API integration"
+          echo "2. Configure GEMINI_API_KEY secret"
+          echo "3. Set ENABLE_GEMINI='true' in .github/workflows/ai-agents-matrix.yml"
+          echo ""
+          echo "For now, please use @claude which is fully functional."
+          exit 1
 
-            ## Context
-            First, read the conversation context to understand what's being discussed:
-            ```bash
-            cat /tmp/conversation.txt
-            ```
-
-            ## Current Request
-            """
-            ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
-            ${{ github.event_name == 'pull_request_review_comment' && github.event.comment.body || '' }}
-            ${{ github.event_name == 'pull_request_review' && github.event.review.body || '' }}
-            ${{ github.event_name == 'issues' && github.event.issue.body || '' }}
-            """
-
-            ## CRITICAL INSTRUCTION
-            You MUST create a response file at `/tmp/claude_response.md` using the Write tool.
-            This is NOT optional. The workflow will fail if you don't create this file.
-
-            Your response file MUST include:
-            1. A header: ## 🤖 Claude Code Bot Response
-            2. Your complete analysis/response to the user's request
-            3. A footer with signature
-
-            Example structure for /tmp/claude_response.md:
-            ```
-            ## 🤖 Claude Code Bot Response
-
-            [Your detailed response here - analysis, code, explanations, etc.]
-
-            ---
-            *🤖 Claude Code Bot • Powered by [Claude 3.5 Sonnet](https://anthropic.com) • [View workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-            ```
-
-            ## Instructions
-            1. Analyze the request thoroughly
-            2. If it's a PR, you can view changes with: gh pr diff ${{ steps.issue.outputs.number }}
-            3. Write your COMPLETE response to /tmp/claude_response.md
-            4. Do NOT attempt to post comments yourself - just create the file
-            5. Focus on being helpful and providing value to the user
-
-            Remember: You MUST use the Write tool to create /tmp/claude_response.md
-          claude_args: "--model claude-3-5-sonnet-20241022 --max-turns 25 --allowed-tools 'Bash(cat:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git:*),Read,Edit,Write,MultiEdit,Glob,Grep'"
-
-      - name: Post Claude Response
+      - name: Post Gemini Response
         if: always()
         run: |
-          echo "Attempting to post Claude's response..."
+          echo "Attempting to post Gemini's response..."
 
-          # The output file from Claude action
-          OUTPUT_FILE="/home/runner/work/_temp/claude-execution-output.json"
+          # The output file from Gemini action
+          OUTPUT_FILE="/tmp/gemini_response.md"
 
           # Call our helper script
-          /tmp/claude/post-response.sh ${{ steps.issue.outputs.number }} "$OUTPUT_FILE"
+          /tmp/gemini/post-response.sh ${{ steps.issue.outputs.number }} "$OUTPUT_FILE"
 
           # Store the exit code
           EXIT_CODE=$?
 
           if [ $EXIT_CODE -eq 0 ]; then
-            echo "✅ Successfully posted Claude's response"
+            echo "✅ Successfully posted Gemini's response"
           else
-            echo "❌ Failed to post Claude's response"
+            echo "❌ Failed to post Gemini's response"
             exit 1
           fi
 
@@ -350,8 +309,8 @@ jobs:
             # Get the last few comments to verify
             RECENT_COMMENTS=$(gh api repos/${{ github.repository }}/issues/${{ steps.issue.outputs.number }}/comments --jq '.[].body' | tail -5)
 
-            if echo "$RECENT_COMMENTS" | grep -q "Claude Code Bot"; then
-              echo "✅ Verified: Claude Code Bot comment was posted"
+            if echo "$RECENT_COMMENTS" | grep -q "Gemini Bot"; then
+              echo "✅ Verified: Gemini Bot comment was posted"
               VERIFIED=true
               break
             fi
@@ -360,7 +319,7 @@ jobs:
           done
 
           if [ "$VERIFIED" = false ]; then
-            echo "⚠️  Warning: Could not verify Claude Code Bot comment after $MAX_RETRIES attempts"
+            echo "⚠️  Warning: Could not verify Gemini Bot comment after $MAX_RETRIES attempts"
             echo "Recent comments:"
             echo "$RECENT_COMMENTS"
           fi
