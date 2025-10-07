@@ -186,7 +186,6 @@ Add to `turbo.json`:
 
 ## Related Documentation
 
-- [`docs/agent-coordination/_reference/spec/brief-maintainer-agent.md`](../../docs/agent-coordination/_reference/spec/brief-maintainer-agent.md) - Brief system overview
 - [`docs/agent-coordination/_reference/spec/brief-maintainer-agent.md`](../../docs/agent-coordination/_reference/spec/brief-maintainer-agent.md) - Maintainer agent spec
 - [`CLAUDE.md`](../../CLAUDE.md) - Project documentation philosophy
 - [`docs/Interface‑First BRIEF System v3 — Spec.md`](../../docs/Interface%E2%80%91First%20BRIEF%20System%20v3%20%E2%80%94%20Spec.md) - BRIEF v3 schema specification
