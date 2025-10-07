@@ -59,7 +59,8 @@
       "Bash(mv:*)",
       "Bash(git config:*)",
       "mcp__github__get_issue",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "mcp__github__get_pull_request_reviews"
     ],
     "deny": [],
     "ask": []
