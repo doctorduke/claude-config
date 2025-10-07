@@ -73,12 +73,18 @@
       "Bash(git diff:*)",
       "mcp__github__add_issue_comment",
       "Bash(tail:*)",
-      "Bash(do echo \"=== $file ===\")",
-      "Bash(do echo \"File: $f\")",
-      "Bash(do echo:*)",
+      "Bash(echo \"=== $file ===\")",
+      "Bash(echo \"File: $f\")",
+      "Bash(echo:*)",
       "Bash(pnpm lint:newlines:*)",
       "Bash(pnpm test:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(while read f)",
+      "Bash(do grep -Eq '^## Spec Snapshot \\([0-9]{4}-[0-9]{2}-[0-9]{2}\\)$' \"$f\")",
+      "Bash(bash:*)",
+      "Bash(test:*)",
+      "Bash(git mv:*)",
+      "Bash(do grep -q '^## Local Reference Index' \"$f\")"
     ],
     "deny": [],
     "ask": []
