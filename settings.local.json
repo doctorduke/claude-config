@@ -68,7 +68,17 @@
       "Bash(then echo \"✓ $file\")",
       "Bash(else echo \"✗ $file (MISSING)\")",
       "Bash(fi)",
-      "Bash(pnpm fix:newlines:*)"
+      "Bash(pnpm fix:newlines:*)",
+      "Bash(git worktree:*)",
+      "Bash(git diff:*)",
+      "mcp__github__add_issue_comment",
+      "Bash(tail:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(do echo \"File: $f\")",
+      "Bash(do echo:*)",
+      "Bash(pnpm lint:newlines:*)",
+      "Bash(pnpm test:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []
