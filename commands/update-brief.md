@@ -186,10 +186,10 @@ Add to `turbo.json`:
 
 ## Related Documentation
 
-- [`docs/brief-system/BRIEF.md`](/Users/doctorduke/Developer/doctorduke/umemee-v0/docs/brief-system/BRIEF.md) - Brief system overview
-- [`docs/brief-maintainer/BRIEF.md`](/Users/doctorduke/Developer/doctorduke/umemee-v0/docs/brief-maintainer/BRIEF.md) - Maintainer agent spec
-- [`CLAUDE.md`](/Users/doctorduke/Developer/doctorduke/umemee-v0/CLAUDE.md) - Project documentation philosophy
-- [`_reference/brief-schema-v3.md`](/Users/doctorduke/Developer/doctorduke/umemee-v0/_reference/brief-schema-v3.md) - BRIEF v3 schema specification
+- [`docs/agent-coordination/_reference/spec/brief-maintainer-agent.md`](../../docs/agent-coordination/_reference/spec/brief-maintainer-agent.md) - Brief system overview
+- [`docs/agent-coordination/_reference/spec/brief-maintainer-agent.md`](../../docs/agent-coordination/_reference/spec/brief-maintainer-agent.md) - Maintainer agent spec
+- [`CLAUDE.md`](../../CLAUDE.md) - Project documentation philosophy
+- [`docs/Interface‑First BRIEF System v3 — Spec.md`](../../docs/Interface%E2%80%91First%20BRIEF%20System%20v3%20%E2%80%94%20Spec.md) - BRIEF v3 schema specification
 
 ## Notes
 
