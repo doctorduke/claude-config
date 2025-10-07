@@ -84,7 +84,12 @@
       "Bash(bash:*)",
       "Bash(test:*)",
       "Bash(git mv:*)",
-      "Bash(do grep -q '^## Local Reference Index' \"$f\")"
+      "Bash(do grep -q '^## Local Reference Index' \"$f\")",
+      "Bash(do grep -q '^## Answer Pack' \"$f\")",
+      "Bash(do grep -q \"## Answer Pack (YAML)\" \"$f\")",
+      "Bash(do [ -f \"$dir/BRIEF.md\" ])",
+      "Bash(do grep -q \"## Answer Pack (YAML)\" \"$file\")",
+      "Bash(do echo \"=== $file ===\")"
     ],
     "deny": [],
     "ask": []
