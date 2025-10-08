@@ -149,13 +149,14 @@ Activates multi-agent orchestration mode for complex multi-phase tasks.
 ```
 
 **What it does**:
-1. Breaks task into logical phases
-2. Detects existing state from `.task-state/` markers
-3. Spawns specialized agents (parallel or sequential)
-4. Validates outputs after each phase
-5. Handles errors autonomously (analyze → retry → escalate)
-6. Creates state markers for resumability
-7. Reports progress and pauses only for user input
+1. Selects a coordination pattern based on task characteristics
+2. Breaks task into logical phases using the pattern
+3. Detects existing state from `.task-state/` markers
+4. Spawns specialized agents (parallel or sequential)
+5. Validates outputs after each phase
+6. Handles errors autonomously (analyze → retry → escalate)
+7. Creates state markers for resumability
+8. Reports progress and pauses only for user input
 
 **Features**:
 - State-based resumption (can pause/resume anytime)
