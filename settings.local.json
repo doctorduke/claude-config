@@ -72,7 +72,6 @@
       "Bash(./docs/agent-coordination/_reference/patterns/validate-core.sh:*)",
       "Bash(npx tsc:*)",
       "Bash(jq:*)",
-      "Bash(done)",
       "Bash(git log:*)"
     ],
     "deny": [],
