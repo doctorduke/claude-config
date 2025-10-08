@@ -227,7 +227,7 @@ For detailed orchestration documentation:
 - **Implementation Guide**: `docs/agent-coordination/_reference/implementation/orchestration-loop.md`
 - **Prompt Templates**: `docs/agent-coordination/_reference/templates/orchestration-prompt.md`
 - **ADR**: `docs/agent-coordination/_reference/adr/ADR-010-orchestration-loop-pattern.md`
-- **Agent Registry**: `docs/agent-coordination/BRIEF.md`
+- **Agent Registry**: `docs/agent-coordination/BRIEF.md` and `.claude/agents/`
 
 ## Integration with Claude Code
 

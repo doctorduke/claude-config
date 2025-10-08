@@ -99,7 +99,7 @@ For each task spawned:
   task: 'Clear instruction',        // What to do
   output: 'Expected deliverable',   // What to produce
   successCriteria: {                // How to validate
-    type: 'file_exists' | 'command_succeeds' | 'test_passes',
+    type: 'file_exists' | 'command_succeeds' | 'test_passes' | 'custom',
     command: 'npm run build',
     files: ['dist/']
   }
