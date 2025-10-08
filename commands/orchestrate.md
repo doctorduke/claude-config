@@ -36,7 +36,7 @@ For each remaining phase:
   │
   ├─ Execute phase tasks
   │   ├─ Parallel phases: Spawn multiple specialized agents simultaneously
-  │   │   └─ Use Promise.all pattern: await all agents before proceeding
+  │   │   └─ Use Promise.allSettled pattern: await all agents before proceeding
   │   └─ Sequential phases: Spawn agents one-by-one
   │       └─ Validate each task before starting next
   │
