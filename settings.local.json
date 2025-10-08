@@ -67,7 +67,13 @@
       "Bash(awk:*)",
       "Bash(bash:*)",
       "Bash(test:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "mcp__github__search_issues",
+      "Bash(./docs/agent-coordination/_reference/patterns/validate-core.sh:*)",
+      "Bash(npx tsc:*)",
+      "Bash(jq:*)",
+      "Bash(done)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

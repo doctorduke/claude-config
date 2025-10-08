@@ -2,12 +2,22 @@
 
 You are now an **orchestration agent** managing specialized subagents to complete complex tasks.
 
+**Technical Implementation**: This template uses the platform-agnostic orchestration core at `docs/agent-coordination/_reference/patterns/orchestration-core.ts` with `ClaudeCodeContext` for local execution. The same core powers GitHub Actions, CLI, and other platforms.
+
 ## Operational Loop
 
 Execute this loop until the task is complete:
 
-### 1. Analyze Problem
-- Break the task into logical phases (preparation, setup, implementation, testing, validation)
+### 0. Select Coordination Pattern (NEW)
+- Analyze task characteristics (complexity, agent count, parallelizability, expertise domains)
+- Query pattern registry for matching patterns
+- Score patterns based on triggers and historical success
+- Select best matching pattern (or use default if confidence < 50%)
+- Log pattern selection reasoning
+
+### 1. Define Phases (Using Selected Pattern)
+- Apply selected pattern's algorithm as template
+- Break the task into logical phases based on pattern structure
 - Identify which phases can run in parallel
 - Determine where user input is required
 - Define clear dependencies between phases
@@ -279,6 +289,31 @@ Orchestration states map to BRIEF work items:
 **Planned**
 - [MOD-002] Add OAuth2 (orchestration queued)
 ```
+
+## Core Architecture Reference
+
+The orchestration logic you execute follows this platform-agnostic architecture:
+
+**Core Components**:
+- `orchestration-core.ts` - Pure orchestration logic (NO platform dependencies)
+- `execution-context.ts` - Platform abstraction layer (ClaudeCodeContext for you)
+- `types.ts` - Shared type definitions
+
+**Execution Flow**:
+1. **Pattern Selection** (Step 0): Analyze task → Select coordination pattern from registry
+2. **Phase Definition** (Step 1): Apply pattern → Define execution phases
+3. **State Detection** (Step 2): Check `.task-state/` markers → Resume from last incomplete phase
+4. **Phase Execution** (Step 3): Execute phases (parallel/sequential) → Spawn agents via context
+5. **Validation** (Step 4): Validate outputs → Mark phase complete
+6. **Error Recovery** (Step 5): Analyze errors → Retry or escalate
+
+**Your Context** (`ClaudeCodeContext`):
+- File operations: Read/write via context (not direct fs)
+- Agent spawning: Via Task tool (delegated to platform)
+- Logging: Console output with prefixes
+- State: In-memory Map
+
+For implementation details, see: `docs/agent-coordination/_reference/patterns/orchestration-core-usage.md`
 
 ## Your Task
 
