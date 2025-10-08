@@ -14,6 +14,8 @@ The hooks in `hooks.mjs` enforce the following documentation requirements:
 - **hooks.mjs** - Main hooks implementation with documentation enforcement logic
 - **test-hooks.mjs** - Test script to validate hooks functionality and scan project compliance
 - **settings.local.json** - Claude Code permissions configuration (NOT COMMITTED - see below)
+- **commands/** - Slash commands for Claude Code workflows
+- **agents/** - Specialized agent definitions (151 types)
 
 ## Hook Functions
 
@@ -126,12 +128,114 @@ if (result.status === 'error') {
 }
 ```
 
+## Slash Commands
+
+Slash commands provide reusable workflow templates for Claude Code. Commands are markdown files in `.claude/commands/` directory.
+
+### Available Commands
+
+#### `/orchestrate {task}`
+Activates multi-agent orchestration mode for complex multi-phase tasks.
+
+**When to use**:
+- Tasks requiring 3+ specialized agents
+- Multi-step workflows with dependencies
+- Long-running execution needing resumability
+- Tasks requiring autonomous error recovery
+
+**Usage**:
+```
+/orchestrate Migrate authentication from JWT to OAuth2
+```
+
+**What it does**:
+1. Breaks task into logical phases
+2. Detects existing state from `.task-state/` markers
+3. Spawns specialized agents (parallel or sequential)
+4. Validates outputs after each phase
+5. Handles errors autonomously (analyze → retry → escalate)
+6. Creates state markers for resumability
+7. Reports progress and pauses only for user input
+
+**Features**:
+- State-based resumption (can pause/resume anytime)
+- Parallel execution of independent tasks
+- Autonomous error recovery with error-detective agent
+- Access to 151 specialized agent types
+- Validation gates between phases
+
+#### `/orchestrate-append`
+Converts existing conversation into orchestrated multi-agent workflow.
+
+**When to use**:
+- Mid-conversation when task complexity increases
+- When discussion reveals multi-step implementation needed
+- To add structure to exploratory work
+
+**Usage**:
+```
+[After discussing a complex feature...]
+/orchestrate-append
+```
+
+**What it does**:
+1. Reviews conversation history
+2. Synthesizes task and requirements
+3. Defines execution phases from discussion
+4. Applies orchestration loop to synthesized task
+
+#### `/please-detail`
+Comprehensive work assessment and documentation (existing command).
+
+**Usage**:
+```
+/please-detail
+```
+
+#### `/expertise-please`
+Forensic expertise investigation for complex problems (existing command).
+
+**Usage**:
+```
+/expertise-please
+```
+
+### Creating Custom Commands
+
+1. Create markdown file in `.claude/commands/`
+2. File name becomes command (without .md extension)
+3. File contents become the prompt template
+4. Use `{task}` placeholder for user input after command
+
+**Example** (`my-command.md`):
+```markdown
+# My Custom Workflow
+
+Task: {task}
+
+Execute the following steps:
+1. Analyze the task
+2. Execute implementation
+3. Report results
+```
+
+**Usage**: `/my-command Implement feature X`
+
+### Command Documentation
+
+For detailed orchestration documentation:
+- **Implementation Guide**: `docs/agent-coordination/_reference/implementation/orchestration-loop.md`
+- **Prompt Templates**: `docs/agent-coordination/_reference/templates/orchestration-prompt.md`
+- **ADR**: `docs/agent-coordination/_reference/adr/ADR-010-orchestration-loop-pattern.md`
+- **Agent Registry**: `docs/agent-coordination/BRIEF.md`
+
 ## Integration with Claude Code
 
 These hooks are designed to integrate with Claude Code's workflow:
 1. When creating new directories, hooks provide reminders about documentation
 2. When adding code files, hooks check for CLAUDE.md presence
 3. Audit logs help track documentation compliance over time
+4. Slash commands provide reusable workflow templates
 
 ## Maintenance
 
