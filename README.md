@@ -280,5 +280,5 @@ This configuration grants Claude Code permission for:
 ### Related Documentation
 
 - Claude Code documentation: https://docs.anthropic.com/claude/docs
-- Project CLAUDE.md: `/Users/doctorduke/Developer/doctorduke/umemee-v0/CLAUDE.md`
+- Project CLAUDE.md: `/CLAUDE.md`
 - Git workflow: `tools/worktree/CLAUDE.md`, `tools/subtree/CLAUDE.md`
