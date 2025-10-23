@@ -19,7 +19,8 @@
       "Bash(gh auth:*)",
       "Bash(cat:*)",
       "Bash(git config:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
