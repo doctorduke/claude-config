@@ -517,11 +517,26 @@ Answer:"""
             "passed": passed
         }
 
+    # CRITICAL SECURITY WARNING:
+    # exec() runs untrusted LLM-generated code with full system access.
+    # NEVER use in production without proper sandboxing.
+    #
+    # Recommended sandboxing approaches:
+    # 1. Docker container with no network, limited resources
+    # 2. gVisor/Firecracker for kernel-level isolation
+    # 3. Use RestrictedPython library for safer evaluation
+    # 4. Run in separate process with timeout and resource limits
+    #
+    # Example Docker sandbox:
+    # docker run --rm --network=none --memory=256m --cpus=0.5 \
+    #   -v /tmp/code:/code:ro python:3.11 python /code/script.py
+    #
+    # For demonstration only - DO NOT use in production:
     def _test_code(self, code: str, test: str) -> bool:
         try:
             namespace = {}
-            exec(code, namespace)
-            exec(test, namespace)
+            exec(code, namespace)  # UNSAFE: Executes untrusted LLM code
+            exec(test, namespace)  # UNSAFE: Executes untrusted test code
             return True
         except:
             return False
