@@ -1,4 +1,13 @@
----
+#!/usr/bin/env python3
+"""Create refactored multi-agent-coordination-framework files"""
+
+import os
+
+# Change to the skill directory
+os.chdir('D:/doctorduke/github-act/worktrees/refactor-multi-agent/.claude/skills/multi-agent-coordination-framework')
+
+# Create SKILL.md
+skill_content = '''---
 name: multi-agent-coordination-framework
 description: Advanced multi-agent coordination for managing AI agent pods and human teams. Includes agent architectures, communication patterns (pub/sub, message queues), task distribution, consensus mechanisms, conflict resolution, agent specialization, collaborative problem-solving, shared state management, lifecycle management, and multi-agent observability. Supports LangGraph, AutoGen, CrewAI, and distributed systems patterns.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, WebFetch]
@@ -308,3 +317,9 @@ Before deploying multi-agent systems:
 - **Manage shared state**: See [Example 5](./EXAMPLES.md#example-5-event-sourcing)
 - **Auto-scale agents**: See [Example 6](./EXAMPLES.md#example-6-lifecycle-management)
 - **Debug agent interactions**: See [GOTCHAS.md](./GOTCHAS.md#debugging-strategies)
+'''
+
+with open('SKILL.md', 'w', encoding='utf-8') as f:
+    f.write(skill_content)
+
+print('Created SKILL.md')
