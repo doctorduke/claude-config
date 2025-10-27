@@ -1,483 +1,244 @@
-# Complete Onboarding Examples
+# Working Examples
+
+Real-world codebase analysis examples and complete workflows.
+
+**Parent:** [SKILL.md](./SKILL.md)
 
 ## Table of Contents
 
-1. [Python Django Project](#python-django-project)
-2. [React + Express.js Web App](#react--expressjs-web-app)
-3. [Go Microservice](#go-microservice)
-4. [Rust Library](#rust-library)
-5. [Multi-Language Data Pipeline](#multi-language-data-pipeline)
+1. [Complete Onboarding Workflow](#complete-onboarding-workflow)
+2. [Integration with Development](#integration-with-development)
+3. [Real-World Analysis Examples](#real-world-analysis-examples)
 
-## Python Django Project
+## Complete Onboarding Workflow
 
-### Scenario
-
-Onboarding to an existing Django e-commerce platform with 15,000+ LOC, multiple apps, and complex database models.
-
-### Analysis Steps
-
-**Step 1: Quick Survey**
+### All-in-One Analysis Script
 
 ```bash
-./quick-survey.sh .
+#!/bin/bash
+# onboard-codebase.sh - Complete codebase onboarding analysis
+
+set -e
+
+PROJECT_DIR=${1:-.}
+ANALYSIS_DIR="codebase-onboarding"
+
+echo "=== Codebase Onboarding Analyzer ==="
+echo "Project: $PROJECT_DIR"
+echo "Output: $ANALYSIS_DIR"
+echo ""
+
+# Create output directory
+mkdir -p "$ANALYSIS_DIR"
+
+# 1. Quick Survey
+echo "[1/6] Running quick survey..."
+./quick-survey.sh "$PROJECT_DIR" > /dev/null 2>&1 || echo "Survey failed (non-critical)"
+
+# 2. Dependency Analysis
+echo "[2/6] Analyzing dependencies..."
+if ls "$PROJECT_DIR"/**/*.py >/dev/null 2>&1; then
+    python analyze_dependencies.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Python dependency analysis failed"
+fi
+if [ -f "$PROJECT_DIR/package.json" ]; then
+    npx madge --json "$PROJECT_DIR" > "$ANALYSIS_DIR/js-dependencies.json" 2>/dev/null || echo "JS dependency analysis failed"
+fi
+
+# 3. Complexity Analysis
+echo "[3/6] Calculating complexity metrics..."
+if ls "$PROJECT_DIR"/**/*.py >/dev/null 2>&1; then
+    python complexity_analyzer.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Complexity analysis failed"
+fi
+
+# 4. Entry Point Discovery
+echo "[4/6] Finding entry points..."
+python entry_point_finder.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Entry point discovery failed"
+
+# 5. Git History Analysis
+echo "[5/6] Analyzing Git history..."
+if [ -d "$PROJECT_DIR/.git" ]; then
+    ./git-history-analyzer.sh "$PROJECT_DIR" > /dev/null 2>&1 || echo "Git analysis failed"
+fi
+
+# 6. Generate Documentation
+echo "[6/6] Generating documentation..."
+python arch_doc_generator.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Documentation generation failed"
+
+# Move all outputs to analysis directory
+mv dependency-analysis.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv complexity-analysis.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv entry-points.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv git-analysis.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv ARCHITECTURE.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv dependencies.dot "$ANALYSIS_DIR/" 2>/dev/null || true
+mv complexity-report.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv ENTRY-POINTS.md "$ANALYSIS_DIR/" 2>/dev/null || true
+
+echo ""
+echo "=== Onboarding Complete ==="
+echo ""
+echo "Generated documentation:"
+echo "  - $ANALYSIS_DIR/ARCHITECTURE.md (Main documentation)"
+echo "  - $ANALYSIS_DIR/ENTRY-POINTS.md (How to run)"
+echo "  - $ANALYSIS_DIR/complexity-report.md (Code quality)"
+echo "  - $ANALYSIS_DIR/git-analysis.md (History & ownership)"
+echo ""
+echo "Start here: $ANALYSIS_DIR/ARCHITECTURE.md"
 ```
 
-Expected findings:
-- Language: Python (main), HTML/CSS, SQL
-- Framework: Django 4.x
-- Package manager: pip/poetry
-- Directory structure: `manage.py` at root, apps in separate folders
 
-**Step 2: Entry Points Discovery**
+
+## Integration with Development
+
+### Pre-Onboarding Checklist
+
+```markdown
+## New Developer Onboarding Checklist
+
+- [ ] Clone repository
+- [ ] Run `./onboard-codebase.sh`
+- [ ] Read `ARCHITECTURE.md`
+- [ ] Review `ENTRY-POINTS.md`
+- [ ] Check `complexity-report.md` for hotspots
+- [ ] Explore dependency graph visualization
+- [ ] Review Git history for active areas
+- [ ] Set up development environment
+- [ ] Run tests
+- [ ] Make first commit (documentation fix)
+```
+
+### Continuous Documentation
+
+```yaml
+# .github/workflows/architecture-docs.yml
+name: Update Architecture Documentation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze Codebase
+        run: |
+          ./onboard-codebase.sh .
+
+      - name: Commit Documentation
+        run: |
+          git config user.name "Architecture Bot"
+          git config user.email "bot@example.com"
+          git add codebase-onboarding/
+          git commit -m "docs: Update architecture documentation [skip ci]" || true
+          git push
+```
+
+
+
+## Real-World Analysis Examples
+
+### Example 1: Analyzing a Flask Application
 
 ```bash
-python entry_point_finder.py .
+#!/bin/bash
+# analyze-flask-app.sh
+
+PROJECT="my-flask-app"
+
+# 1. Find entry points
+echo "=== Entry Points ==="
+grep -r "@app.route" $PROJECT --include="*.py"
+grep -r "if __name__ == '__main__'" $PROJECT --include="*.py"
+
+# 2. Map dependencies
+echo "=== Dependencies ==="
+python -c "
+import ast
+from pathlib import Path
+
+deps = set()
+for py_file in Path('$PROJECT').rglob('*.py'):
+    with open(py_file) as f:
+        try:
+            tree = ast.parse(f.read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        deps.add(alias.name.split('.')[0])
+        except: pass
+
+for dep in sorted(deps):
+    print(dep)
+"
+
+# 3. Complexity hotspots
+echo "=== High Complexity Functions ==="
+radon cc $PROJECT -n B  # Show B grade or worse
+
+# 4. Architecture patterns
+echo "=== Architecture Patterns ==="
+echo "Models:" && find $PROJECT -name "models.py" -o -name "model.py"
+echo "Views:" && find $PROJECT -name "views.py" -o -name "view.py"
+echo "Forms:" && find $PROJECT -name "forms.py" -o -name "form.py"
 ```
 
-Expected findings:
-```json
-{
-  "main_functions": [
-    {"file": "manage.py", "type": "Python main"}
-  ],
-  "cli_commands": [
-    {
-      "file": "manage.py",
-      "command": "runserver",
-      "type": "Django management command"
-    },
-    {
-      "file": "manage.py",
-      "command": "migrate",
-      "type": "Django management command"
-    }
-  ],
-  "api_endpoints": [
-    {"path": "/api/products/", "method": "GET", "file": "apps/products/views.py"},
-    {"path": "/api/orders/", "method": "POST", "file": "apps/orders/views.py"}
-  ]
-}
-```
-
-**Step 3: Dependency Analysis**
+### Example 2: Analyzing a React Application
 
 ```bash
-python analyze_dependencies.py .
+#!/bin/bash
+# analyze-react-app.sh
+
+PROJECT="my-react-app"
+
+# 1. Technology detection
+echo "=== Technology Stack ==="
+cat $PROJECT/package.json | jq '.dependencies + .devDependencies'
+
+# 2. Component structure
+echo "=== Component Structure ==="
+tree -L 3 -I "node_modules|dist|build" $PROJECT/src
+
+# 3. Dependency graph
+echo "=== Generating Dependency Graph ==="
+npx madge --image dependency-graph.png $PROJECT/src
+
+# 4. Circular dependencies
+echo "=== Circular Dependencies ==="
+npx madge --circular $PROJECT/src
+
+# 5. Unused exports
+echo "=== Unused Exports ==="
+npx ts-prune $PROJECT/src
 ```
 
-Expected findings:
-```json
-{
-  "total_modules": 24,
-  "entry_points": ["manage.py", "wsgi.py"],
-  "external_packages": ["django", "djangorestframework", "celery", "psycopg2"],
-  "circular_dependencies": [],
-  "orphan_modules": ["apps/deprecated/old_module.py"]
-}
-```
-
-**Step 4: Complexity Analysis**
+### Example 3: Analyzing a Go Microservice
 
 ```bash
-python complexity_analyzer.py .
-radon cc . -a -nb
-radon mi . -n B
-```
+#!/bin/bash
+# analyze-go-service.sh
 
-Key findings:
-- Average complexity: 4.2 (low-moderate)
-- High complexity functions: 3 (views with business logic)
-- Low MI files: `apps/products/models.py` (MI: 58) - needs refactoring
-- Recommendation: Break down model methods into service layer
+PROJECT="my-go-service"
 
-**Step 5: Architecture Documentation**
+# 1. Package structure
+echo "=== Package Structure ==="
+go list ./... | grep "^$PROJECT"
 
-```bash
-python arch_doc_generator.py .
-```
+# 2. Dependency tree
+echo "=== Dependency Tree ==="
+go list -m all
 
-Generated `ARCHITECTURE.md` would show:
-- Django web application
-- 8 apps: products, orders, users, payments, inventory, reports, notifications, admin
-- PostgreSQL backend
-- Celery async tasks
-- REST API with DRF
+# 3. Call graph
+echo "=== Call Graph ==="
+go-callvis -group pkg,type -format png $PROJECT | dot -Tpng -o callgraph.png
 
-### Key Insights for New Developer
+# 4. Complexity
+echo "=== Cyclomatic Complexity ==="
+gocyclo -avg .
 
-1. **How to run**: `python manage.py runserver` (dev), `gunicorn config.wsgi` (production)
-2. **File structure**: Apps are modular - each has models, views, serializers, urls
-3. **First task**: Update `ProductSerializer` in `apps/products/serializers.py`
-4. **Gotchas**:
-   - Migrations must be run after schema changes
-   - Celery tasks need Redis running
-   - `settings/` has environment-specific configs
-
----
-
-## React + Express.js Web App
-
-### Scenario
-
-Full-stack JavaScript application with React frontend and Express.js backend. ~8,000 LOC total.
-
-### Analysis Steps
-
-**Step 1: Directory Structure**
-
-```
-project/
-├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   └── index.js
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── pages/
-│   │   └── App.js
-│   └── package.json
-└── docker-compose.yml
-```
-
-**Step 2: Entry Points**
-
-Backend:
-- `backend/src/index.js` - Express server startup
-- API routes: `/api/users`, `/api/posts`, `/api/comments`
-
-Frontend:
-- `frontend/src/index.js` - React mount point
-- Routes: `/`, `/login`, `/dashboard`, `/profile`
-
-**Step 3: Dependency Analysis**
-
-Backend dependencies:
-- express, cors, mongoose, jsonwebtoken, dotenv
-- Dev: jest, supertest, nodemon
-
-Frontend dependencies:
-- react, react-router-dom, axios, tailwindcss
-- Dev: webpack, babel, eslint
-
-**Step 4: Circular Dependency Check**
-
-```bash
-cd backend && npx madge --circular src/
-cd frontend && npx madge --circular src/
-```
-
-Expected findings: None in well-structured app
-
-**Step 5: Integration Points**
-
-- Frontend calls `http://localhost:3000/api/*`
-- JWT tokens in Authorization header
-- CORS configured for localhost development
-
-### Key Insights for New Developer
-
-1. **Start**: Run `npm install` in both directories, then `npm start`
-2. **Backend port**: 5000 (API)
-3. **Frontend port**: 3000 (React)
-4. **Database**: MongoDB (see docker-compose.yml)
-5. **First task**: Add new endpoint in `backend/src/routes/items.js`
-6. **Git flow**: Feature branches from `develop` → PR → merge
-
----
-
-## Go Microservice
-
-### Scenario
-
-Production Go microservice handling payment processing. 3,000 LOC, well-structured.
-
-### Analysis Steps
-
-**Step 1: Package Organization**
-
-```
-payment-service/
-├── main.go
-├── go.mod / go.sum
-├── cmd/
-│   └── server/
-│       └── main.go
-├── internal/
-│   ├── handler/
-│   ├── service/
-│   ├── repository/
-│   └── model/
-├── pkg/
-│   └── paymentgateway/
-└── tests/
-```
-
-**Step 2: Entry Point**
-
-```bash
-go run cmd/server/main.go
-# or
-go build -o payment-service
-./payment-service
-```
-
-**Step 3: Dependency Analysis**
-
-```bash
-go mod graph
-go mod tidy
-```
-
-Key dependencies:
-- gin-gonic/gin (HTTP framework)
-- mongodb/mongo-go-driver (database)
-- stripe-go (payment API)
-
-**Step 4: Interface-Based Design**
-
-```go
-type PaymentProcessor interface {
-    ProcessPayment(ctx context.Context, payment *Payment) error
-    RefundPayment(ctx context.Context, transactionID string) error
-}
-
-type StripeProcessor struct {
-    // Implementation
-}
-
-type MockProcessor struct {
-    // For testing
-}
-```
-
-**Step 5: Error Patterns**
-
-- Custom error types in `internal/errors/`
-- HTTP error responses with proper status codes
-- Context for timeouts and cancellation
-
-### Key Insights for New Developer
-
-1. **Build**: `go build ./...` (all packages)
-2. **Test**: `go test ./...`
-3. **Format**: `gofmt -w .` (auto-format)
-4. **Lint**: `golangci-lint run`
-5. **Run**: `go run cmd/server/main.go`
-6. **Package structure**:
-   - `cmd/`: executable packages
-   - `internal/`: private packages
-   - `pkg/`: public packages
-
----
-
-## Rust Library
-
-### Scenario
-
-Rust cryptography library with multiple modules. 2,500 LOC.
-
-### Analysis Steps
-
-**Step 1: Crate Structure**
-
-```bash
-cargo modules generate graph --lib | dot -Tpng > modules.png
-```
-
-Expected modules:
-- `crypto`: Core cryptographic operations
-- `encoding`: Serialization utilities
-- `errors`: Custom error types
-
-**Step 2: Feature Flags**
-
-```toml
-[features]
-default = ["std"]
-std = []
-wasm = []
-```
-
-**Step 3: Unsafe Code Analysis**
-
-```bash
-cargo geiger
-```
-
-Expected output:
-- ~50 unsafe code blocks
-- Used for: FFI calls, performance-critical code
-- All documented in inline comments
-
-**Step 4: Dependency Analysis**
-
-```bash
-cargo tree
-cargo tree --duplicates
-```
-
-Key dependencies:
-- `sha2`: SHA hashing
-- `aes`: AES encryption
-- `rand`: Random number generation
-
-**Step 5: Testing**
-
-```bash
-cargo test
-cargo test -- --nocapture  # Show output
-cargo test --lib           # Library tests only
-```
-
-### Key Insights for New Developer
-
-1. **Build**: `cargo build` (debug), `cargo build --release` (optimized)
-2. **Test**: `cargo test`
-3. **Doc**: `cargo doc --open` (build and open documentation)
-4. **Check**: `cargo check` (faster than build)
-5. **Clippy**: `cargo clippy` (linting)
-6. **Unsafe**: Always documented and justified
-7. **Benchmarks**: In `benches/` directory
-
----
-
-## Multi-Language Data Pipeline
-
-### Scenario
-
-Complex data pipeline: Python data ingestion, Go processing, Rust compute, JavaScript visualization.
-
-### Architecture
-
-```
-┌─────────────────┐
-│  Python Ingest  │ (databases, APIs)
-└────────┬────────┘
-         │ (CSV/JSON)
-┌────────▼────────┐
-│  Go Processing  │ (validation, transformation)
-└────────┬────────┘
-         │ (Protocol Buffers)
-┌────────▼────────────┐
-│  Rust Computation   │ (heavy math, ML)
-└────────┬────────────┘
-         │ (JSON Results)
-┌────────▼──────────────┐
-│  JavaScript Viz       │ (React dashboards)
-└───────────────────────┘
-```
-
-### Analysis Approach
-
-**Step 1: Identify Components**
-
-- Python: `ingest/` directory
-- Go: `processor/` subdirectory
-- Rust: `compute/` subdirectory
-- JavaScript: `dashboard/` subdirectory
-
-**Step 2: Integration Points**
-
-```
-Python → Go: File system or gRPC
-Go → Rust: Shared library or subprocess
-Rust → JavaScript: REST API or WebSocket
-```
-
-**Step 3: Data Flow Analysis**
-
-```
-Database → Python extract() → CSV files
-CSV files → Go validate() → Normalized JSON
-JSON → Rust compute() → Results file
-Results → JS fetch() → React charts
-```
-
-**Step 4: Deployment Architecture**
-
-- Docker containers for each component
-- Orchestration: Docker Compose or Kubernetes
-- Inter-service communication: REST APIs
-
-### Key Insights
-
-1. **Onboarding**: Start with Python ingest, work downstream
-2. **Dependencies**: Each language has isolated deps
-3. **Testing**: End-to-end tests critical at integration points
-4. **Data formats**: Protocol Buffers or JSON for serialization
-5. **Monitoring**: Log aggregation crucial with multiple components
-
----
-
-## Quick Start Templates
-
-### For Python Project
-
-```bash
-# 1. Discovery
-python entry_point_finder.py .
-radon cc . -a -nb
-radon mi . -n B
-
-# 2. Analysis
-python analyze_dependencies.py .
-python complexity_analyzer.py .
-
-# 3. Documentation
-python arch_doc_generator.py .
-
-# 4. Output
-mkdir -p codebase-analysis
-mv *.json *.md codebase-analysis/
-```
-
-### For JavaScript Project
-
-```bash
-# 1. Dependencies
-npx madge --circular src/
-npx madge --image deps.png src/
-
-# 2. Complexity
-npx cr src/**/*.js --format json > complexity.json
-
-# 3. Duplicates
-npx jscpd src/
-
-# 4. Package analysis
-npm ls --depth=0
-npm audit
-```
-
-### For Go Project
-
-```bash
-# 1. Structure
-go mod graph > deps.txt
-go list ./...
-
-# 2. Complexity
-gocyclo -avg ./...
-go-callvis -format png .
-
-# 3. Testing
-go test ./... -cover
-go test ./... -v
-
-# 4. Quality
+# 5. Static analysis
+echo "=== Static Analysis ==="
 staticcheck ./...
-golangci-lint run
 ```
-
-## Related Documentation
-
-- `PATTERNS.md` - Language-specific patterns
-- `GOTCHAS.md` - Common pitfalls to avoid
-- `REFERENCE.md` - Tools and their options
-- `KNOWLEDGE.md` - Theoretical foundations

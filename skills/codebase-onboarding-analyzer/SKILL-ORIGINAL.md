@@ -1,8 +1,176 @@
-# Implementation Patterns
+---
+name: codebase-onboarding-analyzer
+description: Rapidly understand new codebases through automated analysis of structure, dependencies, architecture, complexity, and data flow. Use when exploring unfamiliar code, onboarding to projects, documenting legacy systems, or generating quick-start guides. Supports Python, JavaScript/TypeScript, Go, Rust, Java, and more.
+allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, WebFetch]
+---
 
-Complete implementation patterns for codebase analysis.
+# Codebase Onboarding Analyzer
 
-**Parent:** [SKILL.md](./SKILL.md)
+## Purpose
+
+Understanding a new codebase is time-consuming and overwhelming. This Skill accelerates onboarding by automatically analyzing:
+
+1. **Repository Structure** - Directory layout, file organization, module boundaries
+2. **Dependency Mapping** - Internal dependencies, external packages, dependency graphs
+3. **Code Complexity** - Cyclomatic complexity, cognitive complexity, maintainability metrics
+4. **Architecture Extraction** - Design patterns, layer separation, component relationships
+5. **Documentation Generation** - Auto-generate architectural docs, API references, diagrams
+6. **Entry Point Identification** - Main functions, CLI commands, API endpoints, service initialization
+7. **Data Flow Analysis** - Trace data movement, state management, side effects
+8. **Quick-Start Guides** - Auto-generated setup and contribution guides
+9. **Contributor Identification** - Git history analysis, ownership mapping
+10. **Technology Stack Detection** - Languages, frameworks, tools, build systems
+
+## When to Use This Skill
+
+- Onboarding to a new project or team
+- Understanding legacy codebases without documentation
+- Technical due diligence (acquisitions, audits)
+- Generating architecture documentation for existing systems
+- Planning refactoring efforts
+- Code review of large PRs
+- Identifying technical debt hotspots
+- Creating developer onboarding materials
+- Reverse engineering application behavior
+- Assessing codebase maintainability
+
+## Core Concepts
+
+### Codebase Understanding Layers
+
+```
+┌─────────────────────────────────────────┐
+│  Surface Layer                          │
+│  ├── Languages & Frameworks             │
+│  ├── Build System & Package Manager     │
+│  └── Directory Structure                │
+├─────────────────────────────────────────┤
+│  Dependency Layer                       │
+│  ├── External Dependencies              │
+│  ├── Internal Module Dependencies       │
+│  └── Dependency Graph & Cycles          │
+├─────────────────────────────────────────┤
+│  Architecture Layer                     │
+│  ├── Design Patterns                    │
+│  ├── Component Boundaries               │
+│  ├── Layer Separation                   │
+│  └── Service Interactions               │
+├─────────────────────────────────────────┤
+│  Code Quality Layer                     │
+│  ├── Complexity Metrics                 │
+│  ├── Code Smells                        │
+│  ├── Test Coverage                      │
+│  └── Technical Debt                     │
+├─────────────────────────────────────────┤
+│  Data Flow Layer                        │
+│  ├── State Management                   │
+│  ├── Data Transformations               │
+│  ├── Side Effects                       │
+│  └── API Contracts                      │
+└─────────────────────────────────────────┘
+```
+
+### Complexity Metrics
+
+**Cyclomatic Complexity** - Number of independent paths through code
+- 1-10: Simple, easy to test
+- 11-20: Moderate complexity
+- 21-50: High complexity, hard to test
+- 50+: Very high, refactor recommended
+
+**Cognitive Complexity** - How hard code is to understand
+- Measures nested control flow, recursion, and non-linear logic
+- Better predictor of maintainability than cyclomatic
+
+**Maintainability Index** - Combined metric (0-100)
+- 85-100: Highly maintainable
+- 65-85: Moderate maintainability
+- 0-65: Difficult to maintain
+
+## Knowledge Resources
+
+### Code Analysis Tools
+
+**Multi-Language:**
+- [tree-sitter](https://tree-sitter.github.io/tree-sitter/) - Fast, incremental parser for syntax trees
+- [ctags](https://github.com/universal-ctags/ctags) - Universal source code indexing
+- [tokei](https://github.com/XAMPPRocky/tokei) - Fast code statistics
+- [cloc](https://github.com/AlDanial/cloc) - Count lines of code
+- [scc](https://github.com/boyter/scc) - Sloc Cloc and Code (faster alternative)
+
+**Python:**
+- [radon](https://radon.readthedocs.io/) - Complexity metrics (cyclomatic, maintainability)
+- [pydeps](https://github.com/thebjorn/pydeps) - Dependency visualization
+- [pyreverse](https://pylint.pycqa.org/en/latest/pyreverse.html) - UML diagrams from code
+- [vulture](https://github.com/jendrikseipp/vulture) - Dead code detection
+- [bandit](https://bandit.readthedocs.io/) - Security issue scanner
+
+**JavaScript/TypeScript:**
+- [madge](https://github.com/pahen/madge) - Dependency graph visualization
+- [complexity-report](https://github.com/escomplex/complexity-report) - Complexity analysis
+- [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) - Dependency validation
+- [ts-morph](https://ts-morph.com/) - TypeScript AST manipulation
+- [jscpd](https://github.com/kucherenko/jscpd) - Copy-paste detector
+
+**Go:**
+- [gocyclo](https://github.com/fzipp/gocyclo) - Cyclomatic complexity
+- [go-callvis](https://github.com/ofabry/go-callvis) - Call graph visualization
+- [godepgraph](https://github.com/kisielk/godepgraph) - Dependency graphs
+- [staticcheck](https://staticcheck.io/) - Advanced linter
+
+**Rust:**
+- [cargo-modules](https://github.com/regexident/cargo-modules) - Module structure visualization
+- [cargo-geiger](https://github.com/rust-secure-code/cargo-geiger) - Unsafe code detection
+- [cargo-tree](https://doc.rust-lang.org/cargo/commands/cargo-tree.html) - Dependency tree
+
+**Java:**
+- [JDepend](https://github.com/clarkware/jdepend) - Design quality metrics
+- [ArchUnit](https://www.archunit.org/) - Architecture testing
+- [Checkstyle](https://checkstyle.org/) - Code quality checks
+- [PMD](https://pmd.github.io/) - Source code analyzer
+
+### Architecture Visualization
+
+- [PlantUML](https://plantuml.com/) - UML diagrams from text
+- [Mermaid](https://mermaid.js.org/) - Diagrams and flowcharts from markdown
+- [Graphviz](https://graphviz.org/) - Graph visualization
+- [Structurizr](https://structurizr.com/) - C4 model architecture diagrams
+- [Archi](https://www.archimatetool.com/) - ArchiMate modeling tool
+
+### Documentation Generators
+
+- [Sphinx](https://www.sphinx-doc.org/) - Python documentation
+- [JSDoc](https://jsdoc.app/) - JavaScript documentation
+- [TypeDoc](https://typedoc.org/) - TypeScript documentation
+- [rustdoc](https://doc.rust-lang.org/rustdoc/) - Rust documentation
+- [Javadoc](https://www.oracle.com/technical-resources/articles/java/javadoc-tool.html) - Java documentation
+- [Doxygen](https://www.doxygen.nl/) - Multi-language documentation
+
+## Common Analysis Gotchas
+
+1. **Generated Code** - Build artifacts skew metrics
+   - **Solution**: Configure `.gitignore` patterns, exclude `dist/`, `build/`, `node_modules/`
+
+2. **Monorepo Complexity** - Multiple projects in one repo
+   - **Solution**: Analyze each workspace separately, then aggregate
+
+3. **Dead Code** - Unused imports/functions inflate complexity
+   - **Solution**: Run dead code detection first, separate metrics
+
+4. **Test Code** - Tests increase complexity metrics
+   - **Solution**: Analyze production code separately from tests
+
+5. **Legacy vs Modern** - Mixed coding styles confuse analysis
+   - **Solution**: Tag/separate old code, track migration progress
+
+6. **Dynamic Languages** - Harder to trace dependencies (Python imports, JS requires)
+   - **Solution**: Use runtime tracing tools, static analysis with limitations
+
+7. **Macro/Template Code** - Expanded code not visible in source
+   - **Solution**: Analyze post-preprocessing for languages like C/C++
+
+8. **Circular Dependencies** - Valid in some languages, problematic in others
+   - **Solution**: Visualize cycles, evaluate if architectural smell or language idiom
 
 ## Implementation Patterns
 
@@ -1643,3 +1811,213 @@ echo "" >> "$OUTPUT_FILE"
 echo "Git history analysis complete: $OUTPUT_FILE"
 ```
 
+## Complete Onboarding Workflow
+
+### All-in-One Analysis Script
+
+```bash
+#!/bin/bash
+# onboard-codebase.sh - Complete codebase onboarding analysis
+
+set -e
+
+PROJECT_DIR=${1:-.}
+ANALYSIS_DIR="codebase-onboarding"
+
+echo "=== Codebase Onboarding Analyzer ==="
+echo "Project: $PROJECT_DIR"
+echo "Output: $ANALYSIS_DIR"
+echo ""
+
+# Create output directory
+mkdir -p "$ANALYSIS_DIR"
+
+# 1. Quick Survey
+echo "[1/6] Running quick survey..."
+./quick-survey.sh "$PROJECT_DIR" > /dev/null 2>&1 || echo "Survey failed (non-critical)"
+
+# 2. Dependency Analysis
+echo "[2/6] Analyzing dependencies..."
+if ls "$PROJECT_DIR"/**/*.py >/dev/null 2>&1; then
+    python analyze_dependencies.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Python dependency analysis failed"
+fi
+if [ -f "$PROJECT_DIR/package.json" ]; then
+    npx madge --json "$PROJECT_DIR" > "$ANALYSIS_DIR/js-dependencies.json" 2>/dev/null || echo "JS dependency analysis failed"
+fi
+
+# 3. Complexity Analysis
+echo "[3/6] Calculating complexity metrics..."
+if ls "$PROJECT_DIR"/**/*.py >/dev/null 2>&1; then
+    python complexity_analyzer.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Complexity analysis failed"
+fi
+
+# 4. Entry Point Discovery
+echo "[4/6] Finding entry points..."
+python entry_point_finder.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Entry point discovery failed"
+
+# 5. Git History Analysis
+echo "[5/6] Analyzing Git history..."
+if [ -d "$PROJECT_DIR/.git" ]; then
+    ./git-history-analyzer.sh "$PROJECT_DIR" > /dev/null 2>&1 || echo "Git analysis failed"
+fi
+
+# 6. Generate Documentation
+echo "[6/6] Generating documentation..."
+python arch_doc_generator.py "$PROJECT_DIR" > /dev/null 2>&1 || echo "Documentation generation failed"
+
+# Move all outputs to analysis directory
+mv dependency-analysis.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv complexity-analysis.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv entry-points.json "$ANALYSIS_DIR/" 2>/dev/null || true
+mv git-analysis.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv ARCHITECTURE.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv dependencies.dot "$ANALYSIS_DIR/" 2>/dev/null || true
+mv complexity-report.md "$ANALYSIS_DIR/" 2>/dev/null || true
+mv ENTRY-POINTS.md "$ANALYSIS_DIR/" 2>/dev/null || true
+
+echo ""
+echo "=== Onboarding Complete ==="
+echo ""
+echo "Generated documentation:"
+echo "  - $ANALYSIS_DIR/ARCHITECTURE.md (Main documentation)"
+echo "  - $ANALYSIS_DIR/ENTRY-POINTS.md (How to run)"
+echo "  - $ANALYSIS_DIR/complexity-report.md (Code quality)"
+echo "  - $ANALYSIS_DIR/git-analysis.md (History & ownership)"
+echo ""
+echo "Start here: $ANALYSIS_DIR/ARCHITECTURE.md"
+```
+
+## Language-Specific Analysis
+
+### Python Project Analysis
+
+```bash
+# Python-specific analysis
+radon cc . -a -nb        # Cyclomatic complexity
+radon mi . -n B          # Maintainability index
+vulture .                # Dead code
+bandit -r .              # Security issues
+pydeps . --max-bacon 2   # Dependency graph
+```
+
+### JavaScript/TypeScript Analysis
+
+```bash
+# JavaScript/TypeScript analysis
+npx madge --circular .                    # Circular dependencies
+npx madge --image graph.png .             # Dependency graph
+npx complexity-report src/**/*.js         # Complexity
+npx jscpd src/                            # Copy-paste detection
+npx dependency-cruiser --output-type dot src | dot -T png > deps.png
+```
+
+### Go Analysis
+
+```bash
+# Go analysis
+gocyclo -avg .                           # Complexity
+go-callvis -format png .                 # Call graph
+godepgraph -s . | dot -Tpng -o deps.png  # Dependency graph
+staticcheck ./...                        # Advanced linting
+```
+
+### Rust Analysis
+
+```bash
+# Rust analysis
+cargo modules generate graph --lib | dot -Tpng > modules.png  # Module graph
+cargo geiger                             # Unsafe code detection
+cargo tree                               # Dependency tree
+cargo clippy                             # Linting
+```
+
+## Best Practices
+
+### DO's
+
+1. **Start Broad, Then Deep** - Overview first, details second
+2. **Automate Analysis** - Use scripts for consistency
+3. **Version Documentation** - Keep architecture docs in Git
+4. **Update Regularly** - Re-run analysis after major changes
+5. **Focus on Patterns** - Look for architectural patterns first
+6. **Identify Entry Points** - Understand how to run the system
+7. **Track Complexity** - Monitor technical debt over time
+8. **Use Visualization** - Graphs aid understanding
+9. **Document Findings** - Share insights with team
+10. **Prioritize Understanding** - Metrics serve understanding, not vice versa
+
+### DON'Ts
+
+1. **Don't Over-Analyze** - Paralysis by analysis is real
+2. **Don't Ignore Tests** - Test code reveals usage patterns
+3. **Don't Trust Metrics Blindly** - Context matters
+4. **Don't Skip Manual Review** - Automated analysis isn't complete
+5. **Don't Analyze Generated Code** - Filter build artifacts
+6. **Don't Forget Documentation** - Existing docs provide context
+7. **Don't Ignore Git History** - History reveals evolution
+8. **Don't Analyze in Isolation** - Talk to maintainers
+
+## Integration with Development
+
+### Pre-Onboarding Checklist
+
+```markdown
+## New Developer Onboarding Checklist
+
+- [ ] Clone repository
+- [ ] Run `./onboard-codebase.sh`
+- [ ] Read `ARCHITECTURE.md`
+- [ ] Review `ENTRY-POINTS.md`
+- [ ] Check `complexity-report.md` for hotspots
+- [ ] Explore dependency graph visualization
+- [ ] Review Git history for active areas
+- [ ] Set up development environment
+- [ ] Run tests
+- [ ] Make first commit (documentation fix)
+```
+
+### Continuous Documentation
+
+```yaml
+# .github/workflows/architecture-docs.yml
+name: Update Architecture Documentation
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze Codebase
+        run: |
+          ./onboard-codebase.sh .
+
+      - name: Commit Documentation
+        run: |
+          git config user.name "Architecture Bot"
+          git config user.email "bot@example.com"
+          git add codebase-onboarding/
+          git commit -m "docs: Update architecture documentation [skip ci]" || true
+          git push
+```
+
+## Related Skills
+
+- `git-mastery-suite` - For Git history analysis techniques
+- `security-scanning-suite` - For security-focused code analysis
+- `multi-agent-coordination-framework` - For collaborative code review
+- `deployment-automation-toolkit` - For understanding deployment architecture
+
+## References
+
+- [Software Architecture Patterns](https://www.oreilly.com/library/view/software-architecture-patterns/9781491971437/) - O'Reilly
+- [Code Complete](https://www.microsoftpressstore.com/store/code-complete-9780735619678) - Steve McConnell
+- [Clean Architecture](https://www.oreilly.com/library/view/clean-architecture-a/9780134494166/) - Robert C. Martin
+- [Refactoring](https://refactoring.com/) - Martin Fowler
+- [The Pragmatic Programmer](https://pragprog.com/titles/tpp20/) - Hunt & Thomas
+- [Structurizr](https://structurizr.com/) - C4 model for architecture
+- [PlantUML](https://plantuml.com/) - Diagrams as code

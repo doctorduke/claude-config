@@ -1,530 +1,257 @@
-# Architecture Knowledge and Theory
+# Knowledge Base
+
+Code analysis concepts, tools comparison, and best practices.
+
+**Parent:** [SKILL.md](./SKILL.md)
 
 ## Table of Contents
 
-1. [Core Concepts](#core-concepts)
-2. [Codebase Understanding Layers](#codebase-understanding-layers)
-3. [Complexity Metrics Explained](#complexity-metrics-explained)
-4. [Architectural Patterns](#architectural-patterns)
-5. [Code Quality Indicators](#code-quality-indicators)
-6. [Learning Resources](#learning-resources)
+1. [Codebase Understanding Layers](#codebase-understanding-layers)
+2. [Complexity Metrics](#complexity-metrics)
+3. [Code Analysis Tools](#code-analysis-tools)
+4. [Architecture Visualization](#architecture-visualization)
+5. [Documentation Generators](#documentation-generators)
+6. [Best Practices](#best-practices)
 
 ## Core Concepts
 
-### What Is Codebase Understanding?
+### Codebase Understanding Layers
 
-**Definition**: The process of comprehending how a software system is organized, how its components interact, what its dependencies are, and what quality characteristics it exhibits.
-
-**Why It Matters**:
-- Faster developer onboarding
-- Better code review quality
-- Informed refactoring decisions
-- Risk assessment for changes
-- Knowledge preservation
-- Architecture documentation
-
-### Understanding vs Memorization
-
-**Key Distinction**:
-- **Memorization**: "There's a function called `process_data()` in `utils.py`"
-- **Understanding**: "The data pipeline has 5 stages: ingest → validate → transform → aggregate → export, each with clear boundaries and responsibility"
-
-**Goal of Analysis**: Build the understanding, not memorization
-
-### Systematic vs Ad-Hoc Analysis
-
-**Ad-Hoc**: Exploring as you go (useful but incomplete)
-
-**Systematic**: Structured approach covering:
-1. Structure (how is code organized?)
-2. Dependencies (what depends on what?)
-3. Complexity (where is it hard?)
-4. Quality (how well is it written?)
-5. Documentation (what exists to explain things?)
-
-## Codebase Understanding Layers
-
-### Layer 1: Surface Layer
-
-**What to Analyze**:
-- Languages and frameworks used
-- Build system and package manager
-- Directory structure and organization
-- Entry points and how to run code
-- Technology stack
-
-**Key Questions**:
-- What language(s) is this written in?
-- What framework(s) are used?
-- How is the codebase organized?
-- How do I run this?
-- What build tools are needed?
-
-**Tools**: tokei, file system analysis, package managers
-
-**Time to Understand**: 15-30 minutes
-
-### Layer 2: Dependency Layer
-
-**What to Analyze**:
-- External dependencies (frameworks, libraries, packages)
-- Internal module dependencies
-- Dependency graphs and cycles
-- Import patterns
-- Coupling between modules
-
-**Key Questions**:
-- What external packages does this depend on?
-- How do modules depend on each other?
-- Are there circular dependencies?
-- Which modules are tightly coupled?
-- What's the dependency hierarchy?
-
-**Tools**: madge, pydeps, godepgraph, cargo tree
-
-**Time to Understand**: 30-60 minutes
-
-**Key Metric**: Coupling (number of dependencies)
-
-### Layer 3: Architecture Layer
-
-**What to Analyze**:
-- Design patterns used
-- Component boundaries
-- Layer separation (if layered architecture)
-- Service interactions
-- Data flow paths
-
-**Key Questions**:
-- What architectural pattern(s) are used? (MVC, microservices, layered, etc.)
-- How are components separated?
-- Where are the boundaries?
-- How do components communicate?
-- What's the data flow?
-
-**Tools**: Code review, architecture visualization, entry point analysis
-
-**Time to Understand**: 1-2 hours
-
-### Layer 4: Code Quality Layer
-
-**What to Analyze**:
-- Complexity metrics (cyclomatic, cognitive)
-- Code smells
-- Test coverage
-- Technical debt
-- Maintainability indicators
-
-**Key Questions**:
-- How complex is the code?
-- Are there code smells?
-- What's the test coverage?
-- Where's the technical debt?
-- How maintainable is it?
-
-**Tools**: radon, linters, coverage tools, complexity analyzers
-
-**Time to Understand**: 1-2 hours
-
-### Layer 5: Data Flow Layer
-
-**What to Analyze**:
-- State management
-- Data transformations
-- Side effects
-- API contracts
-- Data persistence
-
-**Key Questions**:
-- How does data flow through the system?
-- What state is managed where?
-- What transformations happen?
-- What side effects exist?
-- What are the API contracts?
-
-**Tools**: Code review, tracing, documentation analysis
-
-**Time to Understand**: 2-4 hours
-
-## Complexity Metrics Explained
-
-### Cyclomatic Complexity (CC)
-
-**Definition**: Number of independent paths through code
-
-**Calculation**: Count decision points (if, while, for, case, &&, ||, ternary)
-
-**Example**:
-```python
-def simple(x):  # CC = 1
-    return x * 2
-
-def moderate(x):  # CC = 3
-    if x > 0:
-        return x * 2
-    elif x < 0:
-        return x * -1
-    else:
-        return 0
+```
+┌─────────────────────────────────────────┐
+│  Surface Layer                          │
+│  ├── Languages & Frameworks             │
+│  ├── Build System & Package Manager     │
+│  └── Directory Structure                │
+├─────────────────────────────────────────┤
+│  Dependency Layer                       │
+│  ├── External Dependencies              │
+│  ├── Internal Module Dependencies       │
+│  └── Dependency Graph & Cycles          │
+├─────────────────────────────────────────┤
+│  Architecture Layer                     │
+│  ├── Design Patterns                    │
+│  ├── Component Boundaries               │
+│  ├── Layer Separation                   │
+│  └── Service Interactions               │
+├─────────────────────────────────────────┤
+│  Code Quality Layer                     │
+│  ├── Complexity Metrics                 │
+│  ├── Code Smells                        │
+│  ├── Test Coverage                      │
+│  └── Technical Debt                     │
+├─────────────────────────────────────────┤
+│  Data Flow Layer                        │
+│  ├── State Management                   │
+│  ├── Data Transformations               │
+│  ├── Side Effects                       │
+│  └── API Contracts                      │
+└─────────────────────────────────────────┘
 ```
 
-**Interpretation**:
-- 1-5: Simple, easy to test
-- 6-10: Moderate complexity
-- 11-20: Complex, hard to test, plan refactoring
-- 21+: Very complex, refactor immediately
+### Complexity Metrics
 
-**Limitations**:
-- Doesn't account for nesting depth
-- Different tools calculate slightly differently
-- Language-dependent (match statements vs if/else)
+**Cyclomatic Complexity** - Number of independent paths through code
+- 1-10: Simple, easy to test
+- 11-20: Moderate complexity
+- 21-50: High complexity, hard to test
+- 50+: Very high, refactor recommended
 
-### Cognitive Complexity
+**Cognitive Complexity** - How hard code is to understand
+- Measures nested control flow, recursion, and non-linear logic
+- Better predictor of maintainability than cyclomatic
 
-**Definition**: How hard code is to understand (more practical than cyclomatic)
+**Maintainability Index** - Combined metric (0-100)
+- 85-100: Highly maintainable
+- 65-85: Moderate maintainability
+- 0-65: Difficult to maintain
 
-**Factors**:
-- Nested control flow
-- Recursion
-- Non-linear logic
-- Long methods
-- Multiple decision points
 
-**Advantages**:
-- Better predictor of maintainability
-- Accounts for code nesting
-- Reflects developer perspective
 
-**Example**:
-```python
-# High cyclomatic, low cognitive (straightforward)
-def process(items):
-    match item_type:
-        case TYPE_A:
-            return process_a()
-        case TYPE_B:
-            return process_b()
-        case TYPE_C:
-            return process_c()
+## Knowledge Resources
 
-# Low cyclomatic, high cognitive (confusing)
-def calculate(x):
-    return ((x > 0 and x < 100) or x == 0) and (
-        (y > 0 and y < 50) or y == 0
-    ) if condition else None
-```
+### Code Analysis Tools
 
-### Maintainability Index (MI)
+**Multi-Language:**
+- [tree-sitter](https://tree-sitter.github.io/tree-sitter/) - Fast, incremental parser for syntax trees
+- [ctags](https://github.com/universal-ctags/ctags) - Universal source code indexing
+- [tokei](https://github.com/XAMPPRocky/tokei) - Fast code statistics
+- [cloc](https://github.com/AlDanial/cloc) - Count lines of code
+- [scc](https://github.com/boyter/scc) - Sloc Cloc and Code (faster alternative)
 
-**Definition**: Combined metric (0-100 scale)
+**Python:**
+- [radon](https://radon.readthedocs.io/) - Complexity metrics (cyclomatic, maintainability)
+- [pydeps](https://github.com/thebjorn/pydeps) - Dependency visualization
+- [pyreverse](https://pylint.pycqa.org/en/latest/pyreverse.html) - UML diagrams from code
+- [vulture](https://github.com/jendrikseipp/vulture) - Dead code detection
+- [bandit](https://bandit.readthedocs.io/) - Security issue scanner
 
-**Factors**:
-- Lines of code per file
-- Cyclomatic complexity
-- Halstead volume (code metrics)
-- Comment percentage
+**JavaScript/TypeScript:**
+- [madge](https://github.com/pahen/madge) - Dependency graph visualization
+- [complexity-report](https://github.com/escomplex/complexity-report) - Complexity analysis
+- [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) - Dependency validation
+- [ts-morph](https://ts-morph.com/) - TypeScript AST manipulation
+- [jscpd](https://github.com/kucherenko/jscpd) - Copy-paste detector
 
-**Interpretation**:
-- 85-100: Highly maintainable (green)
-- 65-84: Good maintainability (yellow)
-- 50-64: Moderate, improvement needed (orange)
-- 0-49: Difficult to maintain (red)
+**Go:**
+- [gocyclo](https://github.com/fzipp/gocyclo) - Cyclomatic complexity
+- [go-callvis](https://github.com/ofabry/go-callvis) - Call graph visualization
+- [godepgraph](https://github.com/kisielk/godepgraph) - Dependency graphs
+- [staticcheck](https://staticcheck.io/) - Advanced linter
 
-**How to Improve**:
-- Reduce file size
-- Lower complexity
-- Add comments
-- Refactor complex functions
+**Rust:**
+- [cargo-modules](https://github.com/regexident/cargo-modules) - Module structure visualization
+- [cargo-geiger](https://github.com/rust-secure-code/cargo-geiger) - Unsafe code detection
+- [cargo-tree](https://doc.rust-lang.org/cargo/commands/cargo-tree.html) - Dependency tree
 
-### Instability (I)
+**Java:**
+- [JDepend](https://github.com/clarkware/jdepend) - Design quality metrics
+- [ArchUnit](https://www.archunit.org/) - Architecture testing
+- [Checkstyle](https://checkstyle.org/) - Code quality checks
+- [PMD](https://pmd.github.io/) - Source code analyzer
 
-**Definition**: Measure of a module's resistance to change
+### Architecture Visualization
 
-**Calculation**: I = Efferent / (Afferent + Efferent)
+- [PlantUML](https://plantuml.com/) - UML diagrams from text
+- [Mermaid](https://mermaid.js.org/) - Diagrams and flowcharts from markdown
+- [Graphviz](https://graphviz.org/) - Graph visualization
+- [Structurizr](https://structurizr.com/) - C4 model architecture diagrams
+- [Archi](https://www.archimatetool.com/) - ArchiMate modeling tool
 
-**Terms**:
-- **Efferent Coupling**: Outgoing dependencies (this module depends on others)
-- **Afferent Coupling**: Incoming dependencies (other modules depend on this)
+### Documentation Generators
 
-**Interpretation**:
-- I = 0: Maximally stable (nothing depends on it)
-- I = 1: Maximally unstable (only depends on others)
-- I = 0.5: Balanced
-- Ideal range: 0.3-0.7
+- [Sphinx](https://www.sphinx-doc.org/) - Python documentation
+- [JSDoc](https://jsdoc.app/) - JavaScript documentation
+- [TypeDoc](https://typedoc.org/) - TypeScript documentation
+- [rustdoc](https://doc.rust-lang.org/rustdoc/) - Rust documentation
+- [Javadoc](https://www.oracle.com/technical-resources/articles/java/javadoc-tool.html) - Java documentation
+- [Doxygen](https://www.doxygen.nl/) - Multi-language documentation
 
-**Analysis**:
-- High I (>0.8): Core library, but frequently changed
-- Low I (<0.2): Few dependents, but many dependencies
-- Stable modules (low I) should be rarely changed
-- Volatile modules (high I) should be depended on minimally
 
-## Architectural Patterns
 
-### Monolithic Architecture
+## Best Practices
 
-**Characteristics**:
-- Single codebase and deployment
-- All code runs in same process
-- Shared database
-- Tightly coupled components
+### DO's
 
-**Indicators in Analysis**:
-- Single entry point
-- All modules depend on each other
-- Large overall complexity
+1. **Start Broad, Then Deep** - Overview first, details second
+2. **Automate Analysis** - Use scripts for consistency
+3. **Version Documentation** - Keep architecture docs in Git
+4. **Update Regularly** - Re-run analysis after major changes
+5. **Focus on Patterns** - Look for architectural patterns first
+6. **Identify Entry Points** - Understand how to run the system
+7. **Track Complexity** - Monitor technical debt over time
+8. **Use Visualization** - Graphs aid understanding
+9. **Document Findings** - Share insights with team
+10. **Prioritize Understanding** - Metrics serve understanding, not vice versa
 
-**When Suitable**:
-- Small teams
-- Simple domains
-- High performance needed
-- Development simplicity priority
+### DON'Ts
 
-**Challenges**:
-- Scaling individual features difficult
-- High coupling
-- Technology lock-in
+1. **Don't Over-Analyze** - Paralysis by analysis is real
+2. **Don't Ignore Tests** - Test code reveals usage patterns
+3. **Don't Trust Metrics Blindly** - Context matters
+4. **Don't Skip Manual Review** - Automated analysis isn't complete
+5. **Don't Analyze Generated Code** - Filter build artifacts
+6. **Don't Forget Documentation** - Existing docs provide context
+7. **Don't Ignore Git History** - History reveals evolution
+8. **Don't Analyze in Isolation** - Talk to maintainers
 
-### Microservices Architecture
 
-**Characteristics**:
-- Multiple independent services
-- Separate deployments
-- Service-specific databases
-- Communication via APIs
 
-**Indicators in Analysis**:
-- Multiple independent entry points
-- Clear service boundaries
-- Separate dependency graphs
-- Event-driven communication
+## Dependency Analysis Theory
 
-**When Suitable**:
-- Large teams
-- Complex domains
-- Independent scaling needed
-- Heterogeneous technologies acceptable
+### Coupling Metrics
 
-**Challenges**:
-- Distributed system complexity
-- Data consistency
-- Operational overhead
-- Network latency
+**Afferent Coupling (Ca)** - Number of classes that depend on this class
+- Measures incoming dependencies
+- High Ca = many classes depend on this (stable)
 
-### MVC (Model-View-Controller)
+**Efferent Coupling (Ce)** - Number of classes this class depends on
+- Measures outgoing dependencies
+- High Ce = depends on many others (unstable)
 
-**Separation**:
-- **Models**: Data and business logic
-- **Views**: Presentation layer
-- **Controllers**: Request handling and coordination
+**Instability (I)** = Ce / (Ca + Ce)
+- Range: 0 to 1
+- 0 = maximally stable (abstract)
+- 1 = maximally unstable (concrete)
 
-**Identified By**:
-- Files named `models.py`, `views.py`, `controllers.js`
-- Clear separation of concerns
-- Controller entry points to views
+### Dependency Inversion Principle
 
-**Common In**: Django, Rails, Spring MVC
+**Stable Abstractions Principle:**
+- Stable packages should be abstract
+- Unstable packages should be concrete
+
+**Main Sequence Distance:**
+D = | A + I - 1 |
+- A = Abstractness (abstract classes / total classes)
+- I = Instability
+- D close to 0 = good balance
+
+### Circular Dependencies
+
+**Types:**
+1. **Direct** - A → B → A
+2. **Indirect** - A → B → C → A
+3. **Self-reference** - A → A
+
+**Breaking strategies:**
+1. Introduce abstraction layer
+2. Use dependency injection
+3. Apply mediator pattern
+4. Merge cyclic components
+
+## Architecture Patterns
 
 ### Layered Architecture
 
-**Typical Layers**:
-1. **Presentation** (UI, API endpoints)
-2. **Business Logic** (Services, domain logic)
-3. **Data Access** (Repositories, DAOs)
-4. **Database** (Persistence layer)
+```
+┌─────────────────────┐
+│   Presentation      │ ← UI, Controllers
+├─────────────────────┤
+│   Business Logic    │ ← Services, Domain
+├─────────────────────┤
+│   Data Access       │ ← Repositories, DAO
+├─────────────────────┤
+│   Database          │ ← Persistence
+└─────────────────────┘
+```
 
-**Identified By**:
-- Directory structure: `presentation/`, `service/`, `repository/`
-- Strict dependency direction (downward)
-- Clear separation of concerns
+**Detection:**
+- Look for packages named: ui, service, repository, model
+- Check import patterns (upper layers shouldn't import lower)
 
-**Advantages**:
-- Clear separation of concerns
-- Easy to understand
-- Easy to scale horizontally
+### Hexagonal (Ports & Adapters)
 
-**Disadvantages**:
-- Layer coupling
-- Performance (many layers)
-- Not suitable for microservices
+```
+      ┌─────────────┐
+      │   Adapters  │ (HTTP, CLI, Queue)
+      └──────┬──────┘
+             │
+      ┌──────▼──────┐
+      │    Ports    │ (Interfaces)
+      └──────┬──────┘
+             │
+      ┌──────▼──────┐
+      │   Domain    │ (Core Logic)
+      └─────────────┘
+```
 
-### Event-Driven Architecture
+**Detection:**
+- Look for port/adapter packages
+- Interfaces separating core from infrastructure
+- Inversion of control pattern
 
-**Components**:
-- Event producers
-- Event brokers/buses
-- Event consumers
+### Microservices
 
-**Communication**: Asynchronous via events
+**Detection patterns:**
+- Multiple independent deployables
+- Each service has own database
+- API gateway or service mesh
+- Event-driven communication
 
-**Identified By**:
-- Message queues
+### Event-Driven
+
+**Detection:**
+- Event bus or message queue
+- Publisher/subscriber pattern
 - Event handlers
-- Publish-subscribe patterns
-- Decoupled components
-
-**Common In**: Real-time systems, reactive frameworks
-
-## Code Quality Indicators
-
-### High-Quality Codebase Signals
-
-1. **Low Complexity**: Most functions < 10 CC
-2. **Good Test Coverage**: >80% coverage
-3. **Clear Documentation**: Self-documenting code + comments
-4. **Few Dependencies**: Minimal coupling
-5. **Small File Sizes**: Most files < 300 lines
-6. **Consistent Style**: Linters pass
-7. **No Code Duplication**: DRY principles followed
-8. **Clear Naming**: Variables/functions clearly named
-9. **Separation of Concerns**: Single responsibility
-10. **Updated Documentation**: Matches current code
-
-### Warning Signs of Technical Debt
-
-1. **High Complexity**: Functions with CC > 20
-2. **Low Coverage**: <50% test coverage
-3. **Outdated Documentation**: Doesn't match code
-4. **Circular Dependencies**: Modules depend on each other
-5. **Large Files**: Files > 500 lines
-6. **Dead Code**: Unused imports/functions
-7. **Code Duplication**: Copy-pasted code sections
-8. **Poor Naming**: Cryptic variable names
-9. **No Tests**: Critical paths untested
-10. **Inconsistent Style**: Mixed conventions
-
-### Technical Debt Quadrant
-
-```
-        | Obvious    | Hidden
-───────────────────────────────
-Reckless| Wow        | Yikes
-(Aware) | (quick)    | (fast but risky)
-───────────────────────────────
-Prudent | Hmm        | Well Advised
-(Not    | (good)     | (slow but solid)
-aware)  |            |
-```
-
-**Strategy**: Move toward prudent/obvious (known debt) from reckless/hidden
-
-## Learning Resources
-
-### Classic Books
-
-**[Software Architecture Patterns](https://www.oreilly.com/library/view/software-architecture-patterns/9781491971437/)**
-- O'Reilly publication
-- Covers layered, event-driven, microservices
-- Practical, illustrated examples
-
-**[Code Complete](https://www.microsoftpressstore.com/store/code-complete-9780735619678)**
-- Steve McConnell
-- Comprehensive software construction guide
-- Complexity and metrics deep-dive
-
-**[Clean Architecture](https://www.oreilly.com/library/view/clean-architecture-a/9780134494166/)**
-- Robert C. Martin
-- Dependency management
-- Architectural principles
-
-**[Refactoring](https://refactoring.com/)**
-- Martin Fowler
-- Catalog of refactoring techniques
-- When and how to refactor
-
-**[The Pragmatic Programmer](https://pragprog.com/titles/tpp20/)**
-- Hunt & Thomas
-- Practical software development
-- Technical debt management
-
-### Architecture Resources
-
-**[Structurizr](https://structurizr.com/)**
-- C4 model documentation
-- Architecture as code approach
-- Cloud-based collaboration
-
-**[PlantUML](https://plantuml.com/)**
-- UML diagrams as text
-- Easy version control
-- Multiple output formats
-
-**[ArchiMate](https://pubs.opengroup.org/architecture/archimate3-doc/)**
-- Enterprise architecture modeling language
-- Formal notation for architecture
-
-### Complexity Resources
-
-**[Cyclomatic Complexity](https://en.wikipedia.org/wiki/Cyclomatic_complexity)**
-- Wikipedia definition
-- Historical context
-- Limitations
-
-**[Maintainability Index](https://en.wikipedia.org/wiki/Maintainability_index)**
-- Formula and interpretation
-- Practical application
-
-### SOLID Principles
-
-**Single Responsibility**: Class should have one reason to change
-
-**Open/Closed**: Open for extension, closed for modification
-
-**Liskov Substitution**: Derived classes should be substitutable
-
-**Interface Segregation**: Many specific interfaces > one general interface
-
-**Dependency Inversion**: Depend on abstractions, not concretions
-
-### DRY (Don't Repeat Yourself)
-
-**Principle**: Every piece of knowledge should have a single source of truth
-
-**Application**:
-- Extract duplicate code into functions
-- Use inheritance for shared behavior
-- Create reusable components
-- Centralize configuration
-
-### YAGNI (You Aren't Gonna Need It)
-
-**Principle**: Don't implement features you don't currently need
-
-**Balance with DRY**:
-- Write for current needs
-- Refactor when pattern emerges
-- Avoid premature generalization
-
-## Analysis Workflow
-
-### Quick Understanding (30 minutes)
-
-1. Run surface analysis (tokei, directory structure)
-2. Identify entry points
-3. Check README and key files
-4. Skim main modules
-5. Document findings
-
-### Moderate Understanding (2 hours)
-
-1. Complete surface analysis
-2. Map dependencies
-3. Check for circular deps
-4. Analyze complexity metrics
-5. Identify patterns
-6. Create architecture diagram
-
-### Deep Understanding (4-8 hours)
-
-1. Complete layers 1-5 analysis
-2. Code review critical paths
-3. Trace data flows
-4. Document findings comprehensively
-5. Create onboarding guide
-6. Present to team
-
-## Related Documentation
-
-- `PATTERNS.md` - Language-specific pattern examples
-- `REFERENCE.md` - Tool-specific resources
-- `EXAMPLES.md` - Real-world architecture examples
-- `GOTCHAS.md` - Common pitfalls in analysis
+- Saga pattern for transactions
