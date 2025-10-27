@@ -29,10 +29,10 @@ class LLMQualityEvaluator:
     def evaluate(self, query: str, output: str,
                  context: str = None, ground_truth: str = None) -> QualityMetrics:
         eval_prompt = f"""Evaluate this output (0-10 scale):
-Query: {query}
-Output: {output}
-{f'Context: {context}' if context else ''}
-{f'Ground Truth: {ground_truth}' if ground_truth else ''}
+<query>{query}</query>
+<output>{output}</output>
+{f'<context>{context}</context>' if context else ''}
+{f'<ground_truth>{ground_truth}</ground_truth>' if ground_truth else ''}
 
 Score: {{
   "coherence": X,

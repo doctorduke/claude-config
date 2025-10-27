@@ -151,6 +151,7 @@ success_criteria:
 # documentation_writer_agent.py
 
 import ast
+import subprocess
 import os
 from typing import List, Dict, Any
 from pathlib import Path
@@ -343,7 +344,6 @@ See [API Documentation]({structure['api_docs_link']}) for detailed API reference
 
     def _generate_changelog(self, project_path: str, output_dir: str) -> Dict:
         """Generate CHANGELOG from git history."""
-        import subprocess
 
         # Get git log
         result = subprocess.run(

@@ -101,6 +101,7 @@ performance_targets:
 ```python
 # agent_specification.py
 
+import re
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -178,6 +179,9 @@ class AgentSpecification:
     # Success criteria
     success_criteria: List[SuccessCriterion]
 
+    # Error handling
+    error_handling: Optional[Dict[str, Any]] = None
+
     # Optional fields
     dependencies: List[Dict[str, Any]] = None
     context_requirements: List[Dict[str, Any]] = None
@@ -187,8 +191,8 @@ class AgentSpecification:
         """Validate specification completeness and consistency."""
         errors = []
 
-        if not self.name or not self.name.replace('-', '').isalnum():
-            errors.append("Name must be non-empty kebab-case")
+        if not self.name or not re.match(r'^[a-z0-9]+(?:-[a-z0-9]+)*$', self.name):
+            errors.append("Name must be non-empty kebab-case (e.g., 'my-agent')")
 
         if not self.primary_role:
             errors.append("Primary role must be defined")
@@ -949,7 +953,7 @@ class CoordinationProtocol:
         protocol.attempts += 1
 
         if protocol.attempts < protocol.max_retries:
-            # Retry with backoff
+            # Retry with backoff (consider exponential backoff for better resilience)
             time.sleep(protocol.retry_delay * protocol.attempts)
             return self.initiate_handoff(protocol)
         else:
