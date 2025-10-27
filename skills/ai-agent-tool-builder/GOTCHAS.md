@@ -273,13 +273,15 @@ def read_user_file(filename: str) -> str:
     file_path = os.path.join(base_dir, safe_filename)
 
     # Verify result is within base directory
-    abs_path = os.path.abspath(file_path)
-    if not abs_path.startswith(os.path.abspath(base_dir)):
+    # SECURITY: Use realpath to resolve symlinks and prevent path traversal
+    real_base = os.path.realpath(base_dir)
+    real_path = os.path.realpath(file_path)
+    if not real_path.startswith(real_base + os.sep):
         return "Error: Invalid file path"
 
     # Now safe to read
     try:
-        with open(abs_path) as f:
+        with open(real_path) as f:
             return f.read()
     except FileNotFoundError:
         return f"Error: File not found: {safe_filename}"

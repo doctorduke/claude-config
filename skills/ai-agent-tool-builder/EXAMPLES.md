@@ -31,14 +31,15 @@ def validate_path(file_path: str) -> tuple[bool, str, str]:
     Returns: (is_valid, absolute_path, error_message)
     """
     try:
-        # Convert to absolute path
-        abs_path = os.path.abspath(os.path.join(SAFE_BASE_DIR, file_path))
+        # Resolve real paths to prevent symlink-based traversal attacks
+        safe_dir_real = os.path.realpath(SAFE_BASE_DIR)
+        file_path_real = os.path.realpath(os.path.join(safe_dir_real, file_path))
 
         # Check if within safe directory
-        if not abs_path.startswith(SAFE_BASE_DIR):
+        if not file_path_real.startswith(safe_dir_real + os.sep):
             return False, "", f"Error: Path must be within {SAFE_BASE_DIR}"
 
-        return True, abs_path, ""
+        return True, file_path_real, ""
     except Exception as e:
         return False, "", f"Error: Invalid path: {str(e)}"
 
