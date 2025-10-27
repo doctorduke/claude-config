@@ -112,6 +112,7 @@ Map and visualize dependencies:
 # analyze_dependencies.py - Comprehensive dependency analysis
 
 import ast
+import importlib.util
 import json
 import os
 import sys
@@ -187,14 +188,17 @@ class DependencyAnalyzer:
         if hasattr(sys, 'stdlib_module_names'):
             is_stdlib = package in sys.stdlib_module_names
         else:
-            # Fallback for older Python: check common stdlib modules
-            stdlib_modules = {
-                'os', 'sys', 'json', 're', 'math', 'datetime', 'collections',
-                'itertools', 'functools', 'typing', 'pathlib', 'subprocess',
-                'logging', 'argparse', 'unittest', 'asyncio', 'threading',
-                'multiprocessing', 'socket', 'http', 'urllib', 'email', 'xml'
-            }
-            is_stdlib = package in stdlib_modules
+            # Fallback: Check if module is in Python's standard library paths
+            try:
+                spec = importlib.util.find_spec(package)
+                if spec and spec.origin:
+                    # Standard library modules are typically in sys.prefix
+                    is_stdlib = spec.origin.startswith(sys.prefix)
+                else:
+                    is_stdlib = False
+            except (ImportError, ValueError):
+                # If we can't find the module, assume external
+                is_stdlib = False
 
         if is_stdlib:
             # Standard library - treat as external
@@ -660,6 +664,7 @@ Automatically identify application entry points:
 # entry_point_finder.py - Find all ways to run the application
 
 import ast
+import importlib.util
 import json
 import re
 from pathlib import Path
