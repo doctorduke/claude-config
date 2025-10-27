@@ -53,6 +53,7 @@ async def query_service(service: str, endpoint: str, params: Optional[Dict] = No
 Abstract data access with consistent interface:
 
 ```python
+import json
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict
 
@@ -178,7 +179,8 @@ async def process_request(data: Dict, token: Optional[str] = None) -> Dict:
 Notify subscribers when resources change:
 
 ```python
-from typing import List, Callable
+import json
+from typing import List, Callable, Dict, Any
 import asyncio
 
 class ResourceObserver:
@@ -280,10 +282,11 @@ async def query_database(sql: str, params: List = None) -> List[Dict]:
 Implement intelligent caching:
 
 ```python
-from datetime import datetime, timedelta
-from typing import Optional, Any
+import asyncio
 import hashlib
 import json
+from datetime import datetime, timedelta
+from typing import Optional, Any, Dict, List
 
 class CacheEntry:
     def __init__(self, value: Any, ttl: int):
@@ -443,6 +446,7 @@ async def expensive_operation(client_id: str, data: Dict) -> Dict:
 Prevent cascading failures:
 
 ```python
+from collections import defaultdict
 from enum import Enum
 from datetime import datetime, timedelta
 

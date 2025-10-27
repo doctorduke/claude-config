@@ -85,6 +85,7 @@ Score: {{
 Compare prompt variations on test dataset.
 
 ```python
+import anthropic
 from dataclasses import dataclass
 from collections import defaultdict
 import numpy as np
@@ -149,6 +150,10 @@ class PromptEvaluator:
 Evaluate retrieval + generation components.
 
 ```python
+import anthropic
+import numpy as np
+from dataclasses import dataclass
+
 @dataclass
 class RAGMetrics:
     retrieval_precision: float
@@ -272,6 +277,8 @@ Score:"""
 Evaluate demographic bias across groups.
 
 ```python
+import anthropic
+import numpy as np
 from collections import defaultdict
 
 class BiasEvaluator:
@@ -403,7 +410,10 @@ class CostOptimizer:
 Measure response times and throughput.
 
 ```python
+import anthropic
+import numpy as np
 import time
+from dataclasses import dataclass
 
 @dataclass
 class PerformanceMetrics:

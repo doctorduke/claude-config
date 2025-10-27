@@ -251,25 +251,50 @@ def init_database():
 init_database()
 
 @mcp.tool()
-def execute_query(query: str, params: Optional[List] = None) -> Dict[str, Any]:
+def query_table(table_name: str, columns: Optional[List[str]] = None,
+                where_clause: Optional[str] = None,
+                limit: int = 100) -> Dict[str, Any]:
     """
-    Execute a SELECT query and return results
+    Query a database table safely using parameterized queries
 
     Args:
-        query: SQL SELECT query
-        params: Query parameters for safe parameterization
+        table_name: Name of the table to query (whitelist enforced)
+        columns: List of columns to select (default: all)
+        where_clause: Optional WHERE condition (without WHERE keyword)
+        limit: Maximum number of rows to return
     """
-    if not query.strip().upper().startswith("SELECT"):
-        return {"error": "Only SELECT queries are allowed"}
+    # Whitelist of allowed tables to prevent SQL injection
+    ALLOWED_TABLES = {"users", "posts", "comments", "tasks"}
+
+    if table_name not in ALLOWED_TABLES:
+        return {"error": f"Table '{table_name}' not allowed. Allowed tables: {', '.join(ALLOWED_TABLES)}"}
+
+    # Validate limit
+    if not 1 <= limit <= 1000:
+        return {"error": "Limit must be between 1 and 1000"}
 
     try:
+        # Build query safely
+        cols = ", ".join(columns) if columns else "*"
+
+        # Use parameterized queries to prevent SQL injection
+        # Note: Table names can't be parameterized, so we use whitelisting instead
+        if where_clause:
+            # WARNING: where_clause should also be validated or use a query builder
+            # For production, use an ORM or SQL parser library
+            query = f"SELECT {cols} FROM {table_name} WHERE {where_clause} LIMIT ?"
+            params = [limit]
+        else:
+            query = f"SELECT {cols} FROM {table_name} LIMIT ?"
+            params = [limit]
+
         with get_db() as conn:
-            cursor = conn.execute(query, params or [])
-            columns = [description[0] for description in cursor.description]
+            cursor = conn.execute(query, params)
+            columns_desc = [description[0] for description in cursor.description]
             rows = cursor.fetchall()
 
             return {
-                "columns": columns,
+                "columns": columns_desc,
                 "rows": [dict(row) for row in rows],
                 "count": len(rows)
             }
@@ -620,6 +645,7 @@ Coordinate multiple services:
 from fastmcp import FastMCP
 import asyncio
 from typing import List, Dict, Any
+from datetime import datetime
 import httpx
 
 mcp = FastMCP("orchestrator")

@@ -122,6 +122,9 @@ print(f"\nWinner: {results['winner']} ({results['improvement']:+.2f} improvement
 Evaluate retrieval augmented generation pipeline.
 
 ```python
+import numpy as np
+from ai_evaluation_suite import RAGEvaluator
+
 # Sample RAG data
 rag_test = [
     {
@@ -137,8 +140,6 @@ rag_test = [
     },
     # ... more test cases
 ]
-
-from ai_evaluation_suite import RAGEvaluator
 
 evaluator = RAGEvaluator()
 results = []
@@ -288,6 +289,7 @@ print(f"  Potential Savings: ${sonnet_annual - haiku_annual:,.2f}")
 Continuous evaluation metrics tracking.
 
 ```python
+import numpy as np
 from datetime import datetime, timedelta
 import json
 

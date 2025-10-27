@@ -27,8 +27,7 @@
       "Bash(for file in mlops-engineer.md data-scientist.md test-automator.md debugger.md error-detective.md api-documenter.md payment-integration.md incident-responder.md database-admin.md search-specialist.md graphql-architect.md architect-review.md)",
       "Bash(do cp \"$file\" \"$file.bak\")",
       "Bash(for file in business-analyst content-marketer sales-automator customer-support legal-advisor quant-analyst risk-manager legacy-modernizer context-manager code-reviewer ui-ux-designer mobile-developer unity-developer minecraft-bukkit-pro ios-developer github-pro typescript-pro)",
-      "Bash(do [ -f \"agents/$file.md\" ])",
-      "Bash(git checkout:*)"
+      "Bash(do [ -f \"agents/$file.md\" ])"
     ],
     "deny": [],
     "ask": []

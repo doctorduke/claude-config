@@ -282,6 +282,7 @@ Map and visualize dependencies:
 import ast
 import json
 import os
+import sys
 from pathlib import Path
 from collections import defaultdict
 from typing import Dict, Set, List
@@ -347,17 +348,36 @@ class DependencyAnalyzer:
 
     def _add_dependency(self, module: str, dependency: str):
         """Add dependency relationship"""
-        # Check if internal or external
-        dep_path = self.root / dependency.replace(".", os.sep)
+        # First check if it's a standard library module
+        package = dependency.split(".")[0]
 
-        if dep_path.exists() or (dep_path.parent / "__init__.py").exists():
-            # Internal dependency
-            self.internal_deps[module].add(dependency)
-            self.reverse_deps[dependency].add(module)
+        # Python 3.10+ has sys.stdlib_module_names
+        if hasattr(sys, 'stdlib_module_names'):
+            is_stdlib = package in sys.stdlib_module_names
         else:
-            # External dependency (first part is package name)
-            package = dependency.split(".")[0]
+            # Fallback for older Python: check common stdlib modules
+            stdlib_modules = {
+                'os', 'sys', 'json', 're', 'math', 'datetime', 'collections',
+                'itertools', 'functools', 'typing', 'pathlib', 'subprocess',
+                'logging', 'argparse', 'unittest', 'asyncio', 'threading',
+                'multiprocessing', 'socket', 'http', 'urllib', 'email', 'xml'
+            }
+            is_stdlib = package in stdlib_modules
+
+        if is_stdlib:
+            # Standard library - treat as external
             self.external_deps[module].add(package)
+        else:
+            # Check if internal or external third-party
+            dep_path = self.root / dependency.replace(".", os.sep)
+
+            if dep_path.exists() or (dep_path.parent / "__init__.py").exists():
+                # Internal dependency
+                self.internal_deps[module].add(dependency)
+                self.reverse_deps[dependency].add(module)
+            else:
+                # External third-party dependency
+                self.external_deps[module].add(package)
 
     def _is_entry_point(self, tree: ast.AST) -> bool:
         """Check if module is an entry point"""

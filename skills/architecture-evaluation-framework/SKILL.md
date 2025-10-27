@@ -733,7 +733,10 @@ class CouplingCohesionAnalyzer:
             for import_name in module.imports:
                 # Find matching module
                 for other_module in self.modules.keys():
-                    if import_name in other_module or other_module in import_name:
+                    # Exact match or import_name is a prefix of other_module
+                    # e.g., "pkg.module" matches "pkg.module" or "pkg.module.submodule"
+                    if (other_module == import_name or
+                        other_module.startswith(import_name + '.')):
                         self.dependency_graph[module_name].add(other_module)
 
     def _calculate_coupling_metrics(self) -> List[CouplingMetric]:
