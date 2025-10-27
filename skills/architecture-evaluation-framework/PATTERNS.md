@@ -63,7 +63,11 @@ def detect_anti_patterns(codebase_path):
 
     # God Object detection
     for file_path in glob.glob(f"{codebase_path}/**/*.py", recursive=True):
-        tree = ast.parse(open(file_path).read())
+        try:
+            tree = ast.parse(open(file_path).read())
+        except (SyntaxError, UnicodeDecodeError) as e:
+            print(f"Warning: Skipping {file_path} due to parsing error: {e}")
+            continue
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 method_count = len([n for n in node.body if isinstance(n, ast.FunctionDef)])
@@ -102,8 +106,12 @@ class SOLIDAnalyzer(ast.NodeVisitor):
 
     def analyze(self):
         """Run complete SOLID analysis"""
-        with open(self.file_path) as f:
-            tree = ast.parse(f.read())
+        try:
+            with open(self.file_path) as f:
+                tree = ast.parse(f.read())
+        except (SyntaxError, UnicodeDecodeError) as e:
+            print(f"Warning: Skipping {self.file_path} due to parsing error: {e}")
+            return self.violations
         self.visit(tree)
         return self.violations
 
@@ -210,8 +218,12 @@ def extract_imports(file_path):
     """Extract all imports from a Python file"""
     imports = set()
 
-    with open(file_path) as f:
-        tree = ast.parse(f.read())
+    try:
+        with open(file_path) as f:
+            tree = ast.parse(f.read())
+    except (SyntaxError, UnicodeDecodeError) as e:
+        print(f"Warning: Skipping {file_path} due to parsing error: {e}")
+        return imports
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -714,8 +726,12 @@ def get_module_name(file_path, source_dir):
 ```python
 def calculate_cyclomatic_complexity(file_path):
     """Calculate cyclomatic complexity for a Python file"""
-    with open(file_path) as f:
-        tree = ast.parse(f.read())
+    try:
+        with open(file_path) as f:
+            tree = ast.parse(f.read())
+    except (SyntaxError, UnicodeDecodeError) as e:
+        print(f"Warning: Skipping {file_path} due to parsing error: {e}")
+        return 0  # Return base complexity on error
 
     complexity = 1  # Base complexity
 
