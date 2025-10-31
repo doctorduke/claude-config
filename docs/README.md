@@ -21,7 +21,7 @@ The toolkit is already installed in `.claude/` directory. Just register the hook
 /hooks
 
 # Add these hooks:
-# - PostToolUse -> Bash -> .claude/hooks/sanitize_bash_output.sh
+# - PostToolUse -> Bash -> .claude/hooks/post_tool_sanitize.sh (calls log_sanitizer.py)
 # - PreToolUse -> Bash -> .claude/hooks/estimate_token_waste.sh
 # - SessionStart -> * -> .claude/hooks/session_init.sh
 # - SessionEnd -> * -> .claude/hooks/session_cleanup.sh
@@ -39,7 +39,7 @@ You'll see sanitized output instead of thousands of lines!
 
 ## How It Works
 
-### PostToolUse Hook (sanitize_bash_output.sh)
+### PostToolUse Hook (log_sanitizer.py)
 
 1. Intercepts command output after execution
 2. Saves raw output to `.claude/logs/`

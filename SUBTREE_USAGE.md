@@ -32,7 +32,16 @@ Git subtrees allow us to:
 3. **Configure local settings** (project-specific):
    ```bash
    # Create local settings file (not in subtree)
-   cp .claude/config/thresholds.conf .claude/settings.local.json
+   # Note: thresholds.conf is shell syntax, not JSON
+   # Create settings.local.json from template:
+   cat > .claude/settings.local.json << 'EOF'
+   {
+     "permissions": {
+       "allowRead": ["*"],
+       "allowWrite": [".claude/logs/*"]
+     }
+   }
+   EOF
    # Edit as needed for your project
    ```
 

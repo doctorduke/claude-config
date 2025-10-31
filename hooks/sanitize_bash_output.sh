@@ -1,71 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 # PostToolUse Hook: Sanitize Bash Command Output
-# Automatically sanitizes verbose command outputs before Claude sees them
+# DEPRECATED: This script is deprecated in favor of post_tool_sanitize.sh -> log_sanitizer.py
+# This wrapper exists for backwards compatibility and delegates to the Python implementation.
+# Please update your hooks to use: .claude/hooks/post_tool_sanitize.sh
 
-HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$HOOK_DIR")"
-LIB_DIR="$PROJECT_DIR/lib"
+# Redirect to the Python-based sanitizer
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_SANITIZER="$SCRIPT_DIR/log_sanitizer.py"
+BASH_WRAPPER="$SCRIPT_DIR/post_tool_sanitize.sh"
 
-# Read JSON input from stdin
-input=$(cat)
-
-# Extract command and output using jq
-command=$(echo "$input" | jq -r '.tool_input.command // ""')
-output=$(echo "$input" | jq -r '.tool_output.output // ""')
-
-# Skip if no output
-if [[ -z "$output" ]]; then
+# Prefer the wrapper script, fall back to direct Python call
+if [[ -f "$BASH_WRAPPER" ]]; then
+    exec "$BASH_WRAPPER"
+elif [[ -f "$PYTHON_SANITIZER" ]] && command -v python3 >/dev/null 2>&1; then
+    exec python3 "$PYTHON_SANITIZER"
+else
+    echo "log-sanitizer: post_tool_sanitize.sh or log_sanitizer.py not found; skipping sanitization." 1>&2
+    # Pass stdin through (no-op) to avoid breaking the hook pipeline
+    cat >/dev/null || true
     exit 0
 fi
-
-# Save raw output to log file
-timestamp=$(date +%Y%m%d_%H%M%S)
-safe_cmd=$(echo "$command" | tr ' /' '__' | tr -cd '[:alnum:]_-' | cut -c1-50)
-log_file="$PROJECT_DIR/logs/${timestamp}_${safe_cmd}.log"
-echo "$output" > "$log_file"
-
-# Detect parser type from command
-parser_type="generic"
-if echo "$command" | grep -q "npm"; then
-    parser_type="npm"
-elif echo "$command" | grep -q "node"; then
-    parser_type="node"
-elif echo "$command" | grep -qE "python|python3|pip"; then
-    parser_type="python"
-fi
-
-# Sanitize output
-source "$LIB_DIR/filters/ansi_strip.sh"
-cleaned=$(echo "$output" | strip_ansi)
-
-# Apply parser
-if [[ -f "$LIB_DIR/parsers/${parser_type}_parser.sh" ]]; then
-    sanitized=$(echo "$cleaned" | "$LIB_DIR/parsers/${parser_type}_parser.sh")
-else
-    sanitized=$(echo "$cleaned" | "$LIB_DIR/parsers/generic_parser.sh")
-fi
-
-# Calculate token savings
-original_tokens=$(echo "$output" | wc -w)
-sanitized_tokens=$(echo "$sanitized" | wc -w)
-savings=$((original_tokens - sanitized_tokens))
-savings_pct=$((savings * 100 / (original_tokens + 1)))
-
-# Output sanitized version with metadata
-cat << EOF
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-��� SANITIZED OUTPUT (${savings_pct}% token reduction)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-$sanitized
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-��� Original: ${original_tokens} tokens | Sanitized: ${sanitized_tokens} tokens
-��� Full log: $log_file
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-EOF
-
-exit 0

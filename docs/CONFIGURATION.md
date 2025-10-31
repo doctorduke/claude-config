@@ -185,12 +185,12 @@ PYTHON_FILTER_SITE_PACKAGES=true
 
 ## Hook-Specific Configuration
 
-### PostToolUse Hook (sanitize_bash_output.sh)
+### PostToolUse Hook (log_sanitizer.py)
 
 Modify the hook to change output format:
 
 ```bash
-# Edit .claude/hooks/sanitize_bash_output.sh
+# Edit .claude/hooks/log_sanitizer.py or its config: .claude/hooks/log-sanitizer.config.json
 
 # Change output format
 cat << EOF
