@@ -13,7 +13,7 @@ find "$PROJECT_DIR/logs" -type f -name "*.log" -mtime +7 -delete || true
 if [[ -f "$PROJECT_DIR/cache/current_session" ]]; then
     SESSION_ID=$(cat "$PROJECT_DIR/cache/current_session")
     STATS_FILE="$PROJECT_DIR/cache/$SESSION_ID/stats.json"
-    
+
     if [[ -f "$STATS_FILE" ]]; then
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
         echo "��� Log Sanitization Session Summary" >&2

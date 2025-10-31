@@ -161,7 +161,7 @@ def mask_secrets(s: str) -> str:
             out = pat.sub(repl, out)
         except Exception:
             continue
-        
+
     return out
 
 
