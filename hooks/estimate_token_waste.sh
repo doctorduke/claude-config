@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # PreToolUse Hook: Estimate Token Waste
 # Warns or blocks commands that will generate excessive output
 
@@ -37,7 +38,7 @@ for pattern in "${!WASTE_PATTERNS[@]}"; do
 Command: $command
 Estimated output: ~${estimated_tokens} tokens
 
-��� Suggestion: Add --silent or --quiet flag to reduce output by 70-80%
+��� Suggestion: Add --silent or --quiet flag to reduce output by 70-80%
 
 Example: ${command} --silent
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

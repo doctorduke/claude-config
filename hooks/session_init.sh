@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # SessionStart Hook: Initialize session
 # Sets up cache and environment for the session
 

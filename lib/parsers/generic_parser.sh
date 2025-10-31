@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Generic Parser - Universal fallback for any command output
 
 parse_generic() {

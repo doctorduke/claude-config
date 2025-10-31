@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # PostToolUse Hook: Sanitize Bash Command Output
 # Automatically sanitizes verbose command outputs before Claude sees them
 
@@ -55,14 +56,14 @@ savings_pct=$((savings * 100 / (original_tokens + 1)))
 cat << EOF
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-��� SANITIZED OUTPUT (${savings_pct}% token reduction)
+��� SANITIZED OUTPUT (${savings_pct}% token reduction)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 $sanitized
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-��� Original: ${original_tokens} tokens | Sanitized: ${sanitized_tokens} tokens
-��� Full log: $log_file
+��� Original: ${original_tokens} tokens | Sanitized: ${sanitized_tokens} tokens
+��� Full log: $log_file
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 EOF

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Node.js Parser - Extracts stack traces and errors from Node output
 
 parse_node() {

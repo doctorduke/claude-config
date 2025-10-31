@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Claude Code PostToolUse log sanitizer.
 
@@ -95,7 +95,7 @@ def collapse_duplicates(lines, max_dupes=3):
             if count <= max_dupes:
                 out.append(ln)
             elif count == max_dupes + 1:
-                out.append(f"[... {count- max_dupes} similar lines omitted ...]")
+                out.append(f"[... {count - max_dupes} similar lines omitted ...]")
         else:
             last = ln
             count = 1

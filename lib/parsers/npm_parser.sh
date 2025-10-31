@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # NPM Parser - Extracts errors from npm command output
 
 parse_npm() {

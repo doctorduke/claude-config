@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Python Parser - Extracts tracebacks and errors from Python output
 
 parse_python() {
