@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - Submodule reference patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Module organization concepts
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Module organization concepts
 
 ---
 
@@ -179,5 +179,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - Module hierarchy and scoping patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Parent-child relationship concepts
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Parent-child relationship concepts
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

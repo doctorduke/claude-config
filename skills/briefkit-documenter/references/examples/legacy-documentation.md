@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - INFERRED marker guidelines
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Legacy modernization strategies
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Legacy modernization strategies
 
 ---
 
@@ -138,5 +138,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - INFERRED marker and legacy patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Legacy code analysis techniques
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Legacy code analysis techniques
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

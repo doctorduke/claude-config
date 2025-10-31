@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - Event-driven and gRPC patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Microservice architecture concepts
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Microservice architecture concepts
 
 ---
 
@@ -167,5 +167,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - Microservice and event-driven patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - gRPC, Kafka, and reliability patterns
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - gRPC, Kafka, and reliability patterns
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

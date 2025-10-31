@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - BRIEF structure and section definitions
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Conversion strategies and validation
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Conversion strategies and validation
 
 ---
 
@@ -248,5 +248,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - BRIEF structure standards
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - PRD analysis and conversion strategies
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - PRD analysis and conversion strategies
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

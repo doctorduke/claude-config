@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - System map and global policy patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Application-level architecture concepts
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Application-level architecture concepts
 
 ---
 
@@ -135,5 +135,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - Application-level BRIEF patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - System mapping and global policies
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - System mapping and global policies
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

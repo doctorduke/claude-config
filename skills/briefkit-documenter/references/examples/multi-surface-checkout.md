@@ -10,7 +10,7 @@
 
 **Related documentation**:
 - [PATTERNS.md](../PATTERNS.md) - Surface definition patterns
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Gesture and interaction documentation
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Gesture and interaction documentation
 
 ---
 
@@ -168,5 +168,5 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ## See Also
 - [PATTERNS.md](../PATTERNS.md) - Surface-specific pattern definitions
-- [KNOWLEDGE.md](../KNOWLEDGE.md) - Gesture documentation and interaction patterns
+- [PHILOSOPHY.md](../PHILOSOPHY.md) - Gesture documentation and interaction patterns
 - [EXAMPLES.md](../EXAMPLES.md) - Example index and selection guide

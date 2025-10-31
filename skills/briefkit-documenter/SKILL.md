@@ -1,6 +1,8 @@
 ---
 name: briefkit-documenter
 description: Create interface-first documentation using BRIEF system v3. Generate BRIEF.md files with inputs/outputs contracts, validate against spec, convert PRDs/specs to BRIEFs, and support multi-surface applications (Web/Mobile/API). Use when creating module documentation, establishing documentation standards, or documenting legacy code.
+allowed-tools: [Read, Write, Edit, Grep, Glob]
+version: 1.0.0
 ---
 
 # Briefkit Documenter
@@ -57,11 +59,6 @@ Full rules in references/SPECIFICATION.md
 - `PHILOSOPHY.md` - Philosophy and methodology
 - `SPECIFICATION.md` - Authoritative v3 specification
 
-### Assets
-- `BRIEF.md.template` - Blank template
-- `claude-rules.md.template` - CLAUDE.md template
-- `.briefignore.template` - Ignore patterns
-
 ## Example Workflows
 
 ### 1. New Module Documentation
@@ -93,7 +90,8 @@ grep "^## .* Pattern$" references/PATTERNS.md      # List all patterns
 grep "DO\|DON'T" references/PATTERNS.md           # Find do/don't lists
 
 # In EXAMPLES.md
-grep "^## Example [0-9]:" references/EXAMPLES.md   # List all examples
+grep "^### Example [0-9]:" references/EXAMPLES.md  # List inline examples (2 quick-start)
+ls references/examples/*.md                         # List specialized examples (6 files)
 grep "Multi-Surface" references/EXAMPLES.md        # Find multi-platform examples
 
 # In PHILOSOPHY.md
