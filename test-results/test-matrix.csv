@@ -1,0 +1,23 @@
+Test ID,Test Name,Category,Status,Severity,Evidence,Notes
+1.1,Workflow Trigger Configuration,PR Review,PASS,LOW,"Lines 4-7 in ai-pr-review.yml",Properly configured for all PR events
+1.2,Sparse Checkout Execution,PR Review,PASS,MEDIUM,"Lines 57-66 in ai-pr-review.yml",Optimizes checkout performance
+1.3,ai-review.sh Script Execution,PR Review,PASS,HIGH,"Lines 90-119 in ai-pr-review.yml",Comprehensive error handling
+1.4,JSON Output Parsing,PR Review,PASS,HIGH,"Lines 109-114 in ai-pr-review.yml",Validates JSON structure
+1.5,gh pr review Posting,PR Review,PASS,CRITICAL,"Lines 147-163 in ai-pr-review.yml",All 3 event types supported
+1.6,Inline Comments Posting,PR Review,PASS,MEDIUM,"Lines 166-188 in ai-pr-review.yml",API-based comment posting
+1.7,Error Handling,PR Review,PASS,HIGH,"Lines 190-207 in ai-pr-review.yml",Comprehensive failure notifications
+2.1,/agent Command Detection,Issue Comment,PASS,MEDIUM,"Lines 33-35 in ai-issue-comment.yml",Prevents unnecessary runs
+2.2,Bot Loop Prevention,Issue Comment,PASS,HIGH,"Lines 59-75 in ai-issue-comment.yml",Prevents runaway automation
+2.3,ai-agent.sh Execution,Issue Comment,PASS,HIGH,"Lines 148-180 in ai-issue-comment.yml",Context extraction works
+2.4,Comment Posting,Issue Comment,PASS,HIGH,"Lines 202-219 in ai-issue-comment.yml",Attribution included
+2.5,JSON Structure Validation,Issue Comment,FAIL,CRITICAL,"Lines 182-200 vs 307-339",MISMATCH: Script vs workflow expectations
+2.6,@mention Handling,Issue Comment,PASS,LOW,"Lines 128-145 in ai-issue-comment.yml",Proper query extraction
+3.1,/autofix Command Detection,Auto-Fix,PASS,MEDIUM,"Lines 42-46 in ai-autofix.yml",Multiple trigger methods
+3.2,Linting Execution,Auto-Fix,PASS,HIGH,"Lines 178-228 in ai-autofix.sh",9 tools supported
+3.3,Commit Creation,Auto-Fix,PASS,HIGH,"Lines 456-471 in ai-autofix.sh",Proper attribution
+3.4,Push to PR Branch,Auto-Fix,PASS,CRITICAL,"Lines 94-117 in ai-autofix.yml",Fork detection prevents security issues
+3.5,No Changes Handling,Auto-Fix,PASS,MEDIUM,"Lines 209-213 in ai-autofix.yml",Graceful fallback
+4.1,Permission Configuration,Cross-Cutting,PASS,CRITICAL,"All workflow permission blocks",Least-privilege enforced
+4.2,Error Propagation,Cross-Cutting,PASS,HIGH,"All scripts line 2: set -euo pipefail",Strict error handling
+4.3,Resource Cleanup,Cross-Cutting,PASS,MEDIUM,"All workflows cleanup steps",Always executed
+4.4,Timeout Configuration,Cross-Cutting,PASS,LOW,"All workflows timeout-minutes",Prevents hung jobs

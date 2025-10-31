@@ -1,0 +1,163 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, develop, 'testing/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  TEST_PARALLEL: 4
+  TEST_COVERAGE: 1
+  TEST_VERBOSE: 0
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-type: [unit, integration, security]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up test environment
+        run: |
+          chmod +x scripts/tests/run-all-tests.sh
+          chmod -R +x scripts/tests/
+
+      - name: Run ${{ matrix.test-type }} tests
+        id: run-tests
+        run: |
+          TEST_FILTER="${{ matrix.test-type }}/*" \
+          TEST_OUTPUT_FORMAT=junit \
+          TEST_OUTPUT_FILE=test-results-${{ matrix.test-type }}.xml \
+          bash scripts/tests/run-all-tests.sh
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: test-results-${{ matrix.test-type }}.xml
+          retention-days: 30
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: test-results-${{ matrix.test-type }}.xml
+          check_name: ${{ matrix.test-type }} Test Results
+
+      - name: Check test status
+        if: steps.run-tests.outcome == 'failure'
+        run: exit 1
+
+  coverage:
+    name: Generate Coverage Report
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up test environment
+        run: |
+          chmod +x scripts/tests/lib/coverage.sh
+
+      - name: Generate coverage report
+        run: bash scripts/tests/lib/coverage.sh
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: scripts/tests/.coverage
+          retention-days: 30
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverageFile = 'scripts/tests/.coverage';
+
+            if (fs.existsSync(coverageFile)) {
+              const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
+
+              const comment = `## Test Coverage Report
+
+              - **Total Functions**: ${coverage.total_functions}
+              - **Tested Functions**: ${coverage.tested_functions}
+              - **Coverage**: ${coverage.coverage_percent}%
+
+              ${coverage.coverage_percent >= 80 ? '✅' : coverage.coverage_percent >= 50 ? '⚠️' : '❌'} Coverage is ${coverage.coverage_percent >= 80 ? 'excellent' : coverage.coverage_percent >= 50 ? 'acceptable' : 'below target'}
+
+              <details>
+              <summary>Untested Functions</summary>
+
+              ${coverage.untested.map(f => `- \`${f}\``).join('\n')}
+
+              </details>`;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  all-tests:
+    name: All Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test.result }}" == "failure" ]; then
+            echo "Some tests failed"
+            exit 1
+          else
+            echo "All tests passed"
+          fi
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [test, coverage]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create summary
+        run: |
+          echo "# Test Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Coverage" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f coverage-report/.coverage ]; then
+            cat coverage-report/.coverage >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Coverage report not available" >> $GITHUB_STEP_SUMMARY
+          fi

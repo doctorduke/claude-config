@@ -1,0 +1,297 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_repo:
+        description: 'Test repository (owner/repo)'
+        required: false
+        type: string
+      test_suite:
+        description: 'Specific test suite to run (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - 'all'
+          - 'pr-review'
+          - 'issue-analysis'
+          - 'autofix'
+          - 'runner-lifecycle'
+          - 'failure-recovery'
+      environment:
+        description: 'Test environment'
+        required: false
+        type: choice
+        default: 'staging'
+        options:
+          - 'staging'
+          - 'production'
+
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  actions: read
+
+env:
+  # Test configuration
+  TEST_TIMEOUT: 600  # 10 minutes per test
+  PASS_THRESHOLD: 60 # 60% pass rate required
+
+jobs:
+  e2e-tests:
+    name: E2E Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup test environment
+        run: |
+          # Install dependencies
+          sudo apt-get update
+          sudo apt-get install -y jq curl git
+
+          # Verify GitHub CLI
+          gh --version
+
+          # Create report directory
+          mkdir -p test-results/e2e
+
+      - name: Configure test environment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Set test repository
+          if [[ -n "${{ inputs.test_repo }}" ]]; then
+            echo "TEST_REPO=${{ inputs.test_repo }}" >> $GITHUB_ENV
+          else
+            echo "TEST_REPO=${{ github.repository }}" >> $GITHUB_ENV
+          fi
+
+          # Set environment
+          echo "TEST_ENV=${{ inputs.environment || 'staging' }}" >> $GITHUB_ENV
+
+          # Configure git
+          git config --global user.email "e2e-test@example.com"
+          git config --global user.name "E2E Test Bot"
+
+      - name: Run E2E test suite
+        id: e2e-tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_REPO: ${{ env.TEST_REPO }}
+          REPORT_DIR: ./test-results/e2e
+        run: |
+          cd scripts/tests/e2e
+
+          # Make scripts executable
+          chmod +x *.sh lib/*.sh
+
+          # Run appropriate test suite
+          case "${{ inputs.test_suite }}" in
+            "pr-review")
+              bash test-pr-review-journey.sh
+              ;;
+            "issue-analysis")
+              bash test-issue-analysis-journey.sh
+              ;;
+            "autofix")
+              bash test-autofix-journey.sh
+              ;;
+            "runner-lifecycle")
+              bash test-runner-lifecycle.sh
+              ;;
+            "failure-recovery")
+              bash test-failure-recovery.sh
+              ;;
+            *)
+              bash run-all-e2e-tests.sh
+              ;;
+          esac
+        continue-on-error: true
+
+      - name: Generate test report
+        if: always()
+        run: |
+          cd test-results/e2e
+
+          # Get latest report
+          LATEST_REPORT=$(ls -t e2e-report-*.txt | head -1)
+          LATEST_JSON=$(ls -t e2e-report-*.json | head -1)
+
+          if [[ -f "$LATEST_REPORT" ]]; then
+            echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            cat "$LATEST_REPORT" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+            # Extract metrics
+            if [[ -f "$LATEST_JSON" ]]; then
+              PASS_RATE=$(jq -r '.summary.passRate' "$LATEST_JSON")
+              TOTAL=$(jq -r '.summary.total' "$LATEST_JSON")
+              PASSED=$(jq -r '.summary.passed' "$LATEST_JSON")
+              FAILED=$(jq -r '.summary.failed' "$LATEST_JSON")
+              TIME=$(jq -r '.summary.totalTime' "$LATEST_JSON")
+
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "### Summary" >> $GITHUB_STEP_SUMMARY
+              echo "- **Pass Rate:** ${PASS_RATE}%" >> $GITHUB_STEP_SUMMARY
+              echo "- **Total Tests:** $TOTAL" >> $GITHUB_STEP_SUMMARY
+              echo "- **Passed:** $PASSED" >> $GITHUB_STEP_SUMMARY
+              echo "- **Failed:** $FAILED" >> $GITHUB_STEP_SUMMARY
+              echo "- **Duration:** ${TIME}s" >> $GITHUB_STEP_SUMMARY
+
+              # Set output for next step
+              echo "pass_rate=$PASS_RATE" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No test report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results-${{ github.run_number }}
+          path: |
+            test-results/e2e/*.txt
+            test-results/e2e/*.json
+            test-results/e2e/*.log
+          retention-days: 30
+
+      - name: Check pass threshold
+        if: always()
+        run: |
+          cd test-results/e2e
+          LATEST_JSON=$(ls -t e2e-report-*.json | head -1)
+
+          if [[ -f "$LATEST_JSON" ]]; then
+            PASS_RATE=$(jq -r '.summary.passRate' "$LATEST_JSON")
+
+            echo "Pass rate: ${PASS_RATE}%"
+            echo "Threshold: ${{ env.PASS_THRESHOLD }}%"
+
+            if [[ $PASS_RATE -ge ${{ env.PASS_THRESHOLD }} ]]; then
+              echo "✓ Tests passed threshold"
+              exit 0
+            else
+              echo "✗ Tests below threshold"
+              exit 1
+            fi
+          else
+            echo "No test results found"
+            exit 1
+          fi
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read test report
+            const reportDir = './test-results/e2e';
+            const files = fs.readdirSync(reportDir);
+            const jsonFiles = files.filter(f => f.startsWith('e2e-report-') && f.endsWith('.json'));
+
+            let reportBody = 'E2E tests failed. See workflow run for details.';
+
+            if (jsonFiles.length > 0) {
+              const latestJson = jsonFiles.sort().reverse()[0];
+              const report = JSON.parse(fs.readFileSync(`${reportDir}/${latestJson}`, 'utf8'));
+
+              reportBody = `
+            ## E2E Test Failure
+
+            The scheduled E2E test run has failed.
+
+            ### Summary
+            - **Pass Rate:** ${report.summary.passRate}%
+            - **Total:** ${report.summary.total}
+            - **Passed:** ${report.summary.passed}
+            - **Failed:** ${report.summary.failed}
+            - **Duration:** ${report.summary.totalTime}s
+
+            ### Failed Suites
+            ${report.suites.filter(s => s.status !== 'PASS').map(s => `- ${s.name}: ${s.details || 'See logs'}`).join('\n')}
+
+            ### Action Required
+            Review the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) and fix failing tests.
+            `;
+            }
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `E2E Tests Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: reportBody,
+              labels: ['test-failure', 'e2e', 'automated']
+            });
+
+  performance-benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-test-results-${{ github.run_number }}
+          path: test-results/e2e
+
+      - name: Analyze performance
+        run: |
+          cd test-results/e2e
+          LATEST_JSON=$(ls -t e2e-report-*.json | head -1)
+
+          if [[ -f "$LATEST_JSON" ]]; then
+            echo "## Performance Benchmarks" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Extract timings
+            jq -r '.suites[] | "- \(.name): \(.duration)s"' "$LATEST_JSON" >> $GITHUB_STEP_SUMMARY
+
+            # Check against targets from TASKS-REMAINING.md
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Target Compliance" >> $GITHUB_STEP_SUMMARY
+
+            # PR Review should be < 60s
+            PR_TIME=$(jq -r '.suites[] | select(.name == "PR Review Journey") | .duration' "$LATEST_JSON")
+            if [[ -n "$PR_TIME" && $PR_TIME -lt 60 ]]; then
+              echo "- ✓ PR Review: ${PR_TIME}s (target: <60s)" >> $GITHUB_STEP_SUMMARY
+            elif [[ -n "$PR_TIME" ]]; then
+              echo "- ✗ PR Review: ${PR_TIME}s (target: <60s)" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            # Issue Analysis should be < 30s
+            ISSUE_TIME=$(jq -r '.suites[] | select(.name == "Issue Analysis Journey") | .duration' "$LATEST_JSON")
+            if [[ -n "$ISSUE_TIME" && $ISSUE_TIME -lt 30 ]]; then
+              echo "- ✓ Issue Analysis: ${ISSUE_TIME}s (target: <30s)" >> $GITHUB_STEP_SUMMARY
+            elif [[ -n "$ISSUE_TIME" ]]; then
+              echo "- ✗ Issue Analysis: ${ISSUE_TIME}s (target: <30s)" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Compare with baseline
+        if: github.event_name == 'release'
+        run: |
+          echo "Comparing performance with previous release..."
+          # In production, would fetch previous baseline and compare
+          echo "Performance comparison completed"

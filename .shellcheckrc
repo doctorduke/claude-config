@@ -1,0 +1,12 @@
+# ShellCheck configuration file
+# https://www.shellcheck.net/wiki/Ignore
+
+# Enable all optional checks
+enable=all
+
+# Disable specific checks if needed (none disabled by default)
+# disable=SC2034
+
+# Security-focused configuration
+# Warn about eval usage (SC2294 is for eval usage)
+# Note: ShellCheck already warns about eval by default (SC2086, SC2294)

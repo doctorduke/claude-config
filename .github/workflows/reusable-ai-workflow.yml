@@ -1,0 +1,397 @@
+name: Reusable AI-Powered Workflow
+description: Organization-wide reusable workflow for AI-powered code reviews and analysis
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: 'Pull request number to review'
+        required: true
+        type: number
+      ai_model:
+        description: 'AI model to use for analysis'
+        required: false
+        type: string
+        default: 'claude-3-opus'
+      max_files:
+        description: 'Maximum number of files to review'
+        required: false
+        type: number
+        default: 20
+      threshold_score:
+        description: 'Minimum quality threshold (0-100)'
+        required: false
+        type: number
+        default: 70
+      review_mode:
+        description: 'Review mode: strict, standard, or lenient'
+        required: false
+        type: string
+        default: 'standard'
+      enable_auto_comment:
+        description: 'Enable automatic inline comments'
+        required: false
+        type: boolean
+        default: true
+      checkout_mode:
+        description: 'Checkout mode: sparse or full'
+        required: false
+        type: string
+        default: 'sparse'
+      language_stack:
+        description: 'Language stack to setup (node, python, go, or multi)'
+        required: false
+        type: string
+        default: 'node'
+    outputs:
+      review_id:
+        description: 'The ID of the posted review'
+        value: ${{ jobs.ai-review.outputs.review_id }}
+      review_status:
+        description: 'Status of the review (approved/changes_requested/commented)'
+        value: ${{ jobs.ai-review.outputs.status }}
+      score:
+        description: 'Quality score assigned by AI (0-100)'
+        value: ${{ jobs.ai-review.outputs.score }}
+      issues_found:
+        description: 'Number of issues found during review'
+        value: ${{ jobs.ai-review.outputs.issues_found }}
+      execution_time:
+        description: 'Total execution time in seconds'
+        value: ${{ jobs.ai-review.outputs.execution_time }}
+    secrets:
+      ai_api_key:
+        description: 'API key for AI service (Claude, OpenAI, etc.)'
+        required: true
+      github_token:
+        description: 'GitHub token for API access (defaults to GITHUB_TOKEN)'
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+env:
+  AI_MODEL: ${{ inputs.ai_model }}
+  MAX_FILES: ${{ inputs.max_files }}
+  THRESHOLD_SCORE: ${{ inputs.threshold_score }}
+  REVIEW_MODE: ${{ inputs.review_mode }}
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      review_id: ${{ steps.post-review.outputs.review_id }}
+      status: ${{ steps.analyze.outputs.status }}
+      score: ${{ steps.analyze.outputs.score }}
+      issues_found: ${{ steps.analyze.outputs.issues_found }}
+      execution_time: ${{ steps.timing.outputs.duration }}
+
+    steps:
+      # SECURITY: Mask secrets as first step to prevent credential exposure
+      # OWASP A09:2021 - Security Logging and Monitoring Failures
+      - name: Mask sensitive values
+        uses: ./.github/actions/mask-secrets
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ai_api_key: ${{ secrets.AI_API_KEY }}
+
+      - name: Record start time
+        id: start
+        run: echo "start_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Setup AI agent environment
+        id: setup
+        uses: ./.github/actions/setup-ai-agent
+        with:
+          checkout-mode: ${{ inputs.checkout_mode }}
+          language-stack: ${{ inputs.language_stack }}
+          install-gh-cli: 'true'
+          setup-cache: 'true'
+
+      - name: Validate PR number
+        id: validate
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Error: Invalid PR number: $PR_NUMBER"
+            exit 1
+          fi
+
+          # Verify PR exists
+          if ! gh pr view "$PR_NUMBER" --json number > /dev/null 2>&1; then
+            echo "Error: PR #$PR_NUMBER not found"
+            exit 1
+          fi
+
+          echo "pr_validated=true" >> $GITHUB_OUTPUT
+          echo "Pull request #$PR_NUMBER validated successfully"
+
+      - name: Fetch PR context
+        id: pr-context
+        env:
+          GH_TOKEN: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          echo "Fetching PR context for #$PR_NUMBER..."
+
+          # Get PR details as JSON
+          pr_data=$(gh pr view "$PR_NUMBER" \
+            --json number,title,body,state,author,additions,deletions,changedFiles,files,labels,reviews)
+
+          # Extract key information
+          pr_title=$(echo "$pr_data" | jq -r '.title')
+          pr_author=$(echo "$pr_data" | jq -r '.author.login')
+          pr_files=$(echo "$pr_data" | jq -r '.changedFiles')
+          pr_additions=$(echo "$pr_data" | jq -r '.additions')
+          pr_deletions=$(echo "$pr_data" | jq -r '.deletions')
+
+          echo "title=$pr_title" >> $GITHUB_OUTPUT
+          echo "author=$pr_author" >> $GITHUB_OUTPUT
+          echo "files_changed=$pr_files" >> $GITHUB_OUTPUT
+          echo "additions=$pr_additions" >> $GITHUB_OUTPUT
+          echo "deletions=$pr_deletions" >> $GITHUB_OUTPUT
+
+          # Save full context to file
+          echo "$pr_data" > pr-context.json
+
+          echo "PR Context:"
+          echo "  Title: $pr_title"
+          echo "  Author: $pr_author"
+          echo "  Files: $pr_files"
+          echo "  Stats: +$pr_additions -$pr_deletions"
+
+      - name: Check file count threshold
+        id: check-threshold
+        env:
+          FILES_CHANGED: ${{ steps.pr-context.outputs.files_changed }}
+          MAX_FILES: ${{ inputs.max_files }}
+        run: |
+          if [[ "$FILES_CHANGED" -gt "$MAX_FILES" ]]; then
+            echo "Warning: PR has $FILES_CHANGED files (max: $MAX_FILES)"
+            echo "Review will be limited to first $MAX_FILES files"
+            echo "exceeded_threshold=true" >> $GITHUB_OUTPUT
+          else
+            echo "exceeded_threshold=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run AI analysis
+        id: analyze
+        env:
+          AI_API_KEY: ${{ secrets.ai_api_key }}
+          GH_TOKEN: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          ENABLE_AUTO_COMMENT: ${{ inputs.enable_auto_comment }}
+        run: |
+          echo "Starting AI analysis with model: $AI_MODEL"
+
+          # Execute AI review script
+          chmod +x ./scripts/ai-review.sh
+
+          ./scripts/ai-review.sh \
+            --pr "$PR_NUMBER" \
+            --model "$AI_MODEL" \
+            --mode "$REVIEW_MODE" \
+            --max-files "$MAX_FILES" \
+            --threshold "$THRESHOLD_SCORE" \
+            --output review-output.json \
+            --verbose
+
+          # Parse results
+          if [[ -f review-output.json ]]; then
+            review_status=$(jq -r '.review.event // "COMMENT"' review-output.json)
+            review_score=$(jq -r '.metadata.score // 75' review-output.json)
+            issues_count=$(jq -r '.review.comments | length' review-output.json)
+
+            echo "status=$review_status" >> $GITHUB_OUTPUT
+            echo "score=$review_score" >> $GITHUB_OUTPUT
+            echo "issues_found=$issues_count" >> $GITHUB_OUTPUT
+
+            echo "Analysis complete:"
+            echo "  Status: $review_status"
+            echo "  Score: $review_score/100"
+            echo "  Issues: $issues_count"
+          else
+            echo "Error: Review output not generated"
+            exit 1
+          fi
+
+      - name: Validate review output
+        id: validate-output
+        run: |
+          echo "Validating review output against JSON schema..."
+
+          # Check if output exists
+          if [[ ! -f review-output.json ]]; then
+            echo "Error: review-output.json not found"
+            exit 1
+          fi
+
+          # Validate JSON syntax
+          if ! jq empty review-output.json; then
+            echo "Error: Invalid JSON in review output"
+            exit 1
+          fi
+
+          # Check required fields
+          required_fields=("review" "metadata")
+          for field in "${required_fields[@]}"; do
+            if ! jq -e ".$field" review-output.json > /dev/null; then
+              echo "Error: Missing required field: $field"
+              exit 1
+            fi
+          done
+
+          echo "Review output validated successfully"
+
+      - name: Post review to PR
+        id: post-review
+        if: success() && steps.validate-output.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          echo "Posting review to PR #$PR_NUMBER..."
+
+          # Extract review components
+          review_body=$(jq -r '.review.body' review-output.json)
+          review_event=$(jq -r '.review.event' review-output.json)
+
+          # Map event types to gh CLI format
+          case "$review_event" in
+            "APPROVE")
+              gh_action="--approve"
+              ;;
+            "REQUEST_CHANGES")
+              gh_action="--request-changes"
+              ;;
+            *)
+              gh_action="--comment"
+              ;;
+          esac
+
+          # Post review
+          review_result=$(gh pr review "$PR_NUMBER" \
+            $gh_action \
+            --body "$review_body" \
+            2>&1) || {
+            echo "Error posting review: $review_result"
+            exit 1
+          }
+
+          # Extract review ID if available
+          review_id=$(echo "$review_result" | grep -oP 'review/\K\d+' || echo "unknown")
+          echo "review_id=$review_id" >> $GITHUB_OUTPUT
+
+          echo "Review posted successfully (ID: $review_id)"
+
+      - name: Post inline comments
+        id: post-comments
+        if: success() && inputs.enable_auto_comment == true
+        env:
+          GH_TOKEN: ${{ secrets.github_token || secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          echo "Posting inline comments..."
+
+          # Check if there are comments to post
+          comment_count=$(jq -r '.review.comments | length' review-output.json)
+
+          if [[ "$comment_count" -eq 0 ]]; then
+            echo "No inline comments to post"
+            exit 0
+          fi
+
+          # Post each comment
+          comments_posted=0
+          while read -r comment; do
+            file_path=$(echo "$comment" | jq -r '.path')
+            line_number=$(echo "$comment" | jq -r '.line')
+            comment_body=$(echo "$comment" | jq -r '.body')
+
+            # Post comment using gh API
+            gh api \
+              -X POST \
+              "repos/{owner}/{repo}/pulls/$PR_NUMBER/comments" \
+              -f body="$comment_body" \
+              -f path="$file_path" \
+              -F line="$line_number" \
+              -f side="RIGHT" \
+              2>&1 && ((comments_posted++)) || echo "Failed to post comment on $file_path:$line_number"
+          done < <(jq -c '.review.comments[]' review-output.json)
+
+          echo "Posted $comments_posted inline comments"
+          echo "comments_posted=$comments_posted" >> $GITHUB_OUTPUT
+
+      - name: Handle threshold failures
+        id: threshold-check
+        if: always()
+        env:
+          SCORE: ${{ steps.analyze.outputs.score }}
+          THRESHOLD: ${{ inputs.threshold_score }}
+        run: |
+          if [[ "$SCORE" -lt "$THRESHOLD" ]]; then
+            echo "Warning: Quality score ($SCORE) below threshold ($THRESHOLD)"
+            echo "threshold_met=false" >> $GITHUB_OUTPUT
+
+            # Add label to PR
+            gh pr edit "${{ inputs.pr_number }}" --add-label "quality-below-threshold" || true
+          else
+            echo "Quality score ($SCORE) meets threshold ($THRESHOLD)"
+            echo "threshold_met=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate execution time
+        id: timing
+        if: always()
+        run: |
+          start_time=${{ steps.start.outputs.start_time }}
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+          echo "Workflow execution time: ${duration}s"
+
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-review-pr-${{ inputs.pr_number }}
+          path: |
+            review-output.json
+            pr-context.json
+          retention-days: 30
+
+      - name: Summary report
+        if: always()
+        run: |
+          cat << 'EOF' >> $GITHUB_STEP_SUMMARY
+          ## AI Review Summary
+
+          ### Pull Request Details
+          - **PR Number:** #${{ inputs.pr_number }}
+          - **Title:** ${{ steps.pr-context.outputs.title }}
+          - **Author:** @${{ steps.pr-context.outputs.author }}
+          - **Files Changed:** ${{ steps.pr-context.outputs.files_changed }}
+          - **Changes:** +${{ steps.pr-context.outputs.additions }} -${{ steps.pr-context.outputs.deletions }}
+
+          ### Review Results
+          - **Status:** ${{ steps.analyze.outputs.status }}
+          - **Quality Score:** ${{ steps.analyze.outputs.score }}/100
+          - **Issues Found:** ${{ steps.analyze.outputs.issues_found }}
+          - **Threshold Met:** ${{ steps.threshold-check.outputs.threshold_met || 'N/A' }}
+
+          ### Configuration
+          - **AI Model:** ${{ inputs.ai_model }}
+          - **Review Mode:** ${{ inputs.review_mode }}
+          - **Max Files:** ${{ inputs.max_files }}
+          - **Threshold:** ${{ inputs.threshold_score }}
+
+          ### Performance
+          - **Execution Time:** ${{ steps.timing.outputs.duration }}s
+          - **Comments Posted:** ${{ steps.post-comments.outputs.comments_posted || 0 }}
+          EOF

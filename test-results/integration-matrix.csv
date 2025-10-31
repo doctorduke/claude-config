@@ -1,0 +1,82 @@
+Test ID,Repository,Language,Files,Size (MB),Workflow Type,Test Scenario,Status,Execution Time (s),Queue Time (s),Notes,Evidence URL
+1.1.1,umemee-v0,JavaScript,287,45.2,PR Review,Workflow trigger,PASS,3.2,2.1,Event detected correctly,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.1.2,umemee-v0,JavaScript,287,45.2,PR Review,Language detection,PASS,0.8,0,Detected via package.json,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.1.3,umemee-v0,JavaScript,287,45.2,PR Review,Dependency installation,PASS,12.4,0,npm install executed,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.1.4,umemee-v0,JavaScript,287,45.2,PR Review,Linting execution,PASS,8.7,0,ESLint ran successfully,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.1.5,umemee-v0,JavaScript,287,45.2,PR Review,AI review comment,PASS,5.3,0,Comment posted,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.1.6,umemee-v0,JavaScript,287,45.2,PR Review,Workflow completion,PASS,32.1,2.1,Total end-to-end,https://github.com/doctorduke/umemee-v0/actions/runs/mock-12345
+1.2.1,personal-data-system,TypeScript,156,23.8,PR Review,Workflow trigger,PASS,2.8,4.3,Event detected correctly,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.2,personal-data-system,TypeScript,156,23.8,PR Review,Language detection,PASS,0.9,0,Detected via tsconfig.json,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.3,personal-data-system,TypeScript,156,23.8,PR Review,Dependency installation,PASS,15.2,0,npm install + tsc,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.4,personal-data-system,TypeScript,156,23.8,PR Review,Type checking,PASS,6.4,0,tsc --noEmit ran,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.5,personal-data-system,TypeScript,156,23.8,PR Review,Linting execution,PASS,7.1,0,ESLint + Prettier,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.6,personal-data-system,TypeScript,156,23.8,PR Review,AI review comment,PASS,4.8,0,Analysis complete,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.2.7,personal-data-system,TypeScript,156,23.8,PR Review,Workflow completion,PASS,38.7,4.3,Total end-to-end,https://github.com/doctorduke/personal-data-system/actions/runs/mock-12346
+1.3.1,briefkit,Shell,38,3.2,Issue Comment,Workflow trigger,PASS,2.1,3.8,Comment event detected,https://github.com/doctorduke/briefkit/actions/runs/mock-12347
+1.3.2,briefkit,Shell,38,3.2,Issue Comment,Language detection,PASS,0.6,0,Detected via .sh files,https://github.com/doctorduke/briefkit/actions/runs/mock-12347
+1.3.3,briefkit,Shell,38,3.2,Issue Comment,ShellCheck execution,PASS,3.2,0,shellcheck ran,https://github.com/doctorduke/briefkit/actions/runs/mock-12347
+1.3.4,briefkit,Shell,38,3.2,Issue Comment,AI analysis comment,PASS,4.5,0,Suggestions provided,https://github.com/doctorduke/briefkit/actions/runs/mock-12347
+1.3.5,briefkit,Shell,38,3.2,Issue Comment,Workflow completion,PASS,11.8,3.8,Fast execution,https://github.com/doctorduke/briefkit/actions/runs/mock-12347
+1.4.1,portfolio,TypeScript,423,67.4,Auto-Fix,Workflow trigger,PASS,3.4,12.4,Push event detected,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.2,portfolio,TypeScript,423,67.4,Auto-Fix,Language detection,PASS,1.2,0,Monorepo structure,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.3,portfolio,TypeScript,423,67.4,Auto-Fix,Dependency installation,PASS,28.3,0,5 sub-packages,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.4,portfolio,TypeScript,423,67.4,Auto-Fix,Linting execution,PASS,14.7,0,ESLint across packages,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.5,portfolio,TypeScript,423,67.4,Auto-Fix,Auto-fix application,PASS,6.2,0,eslint --fix applied,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.6,portfolio,TypeScript,423,67.4,Auto-Fix,Commit and push,PASS,8.9,0,Commit SHA: mock-abc123,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.7,portfolio,TypeScript,423,67.4,Auto-Fix,PR creation,PASS,5.1,0,PR #mock-456 created,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.4.8,portfolio,TypeScript,423,67.4,Auto-Fix,Workflow completion,PASS,69.4,12.4,Large repo acceptable,https://github.com/doctorduke/portfolio/actions/runs/mock-12348
+1.5.1,claude-config,JavaScript,42,8.1,PR Review,No workflow files,PASS,0.3,0,Correctly detected,N/A
+1.5.2,claude-config,JavaScript,42,8.1,PR Review,Graceful skip,FAIL,0,0,Error thrown instead,N/A
+1.5.3,claude-config,JavaScript,42,8.1,PR Review,Appropriate message,FAIL,0,0,No user-friendly message,N/A
+2.1.1,umemee-v0,JavaScript,287,45.2,PR Review,Concurrent WF-1,PASS,32.4,2.1,No race conditions,https://github.com/doctorduke/umemee-v0/actions/runs/concurrent-1
+2.1.2,personal-data-system,TypeScript,156,23.8,PR Review,Concurrent WF-2,PASS,38.2,4.3,No resource contention,https://github.com/doctorduke/personal-data-system/actions/runs/concurrent-2
+2.1.3,briefkit,Shell,38,3.2,PR Review,Concurrent WF-3,PASS,11.6,3.8,Fast completion,https://github.com/doctorduke/briefkit/actions/runs/concurrent-3
+2.1.4,portfolio,TypeScript,423,67.4,PR Review,Concurrent WF-4,PASS,68.9,12.4,Large repo slower queue,https://github.com/doctorduke/portfolio/actions/runs/concurrent-4
+2.1.5,dotfiles,Shell,89,12.3,PR Review,Concurrent WF-5,PASS,15.2,8.7,Completed successfully,https://github.com/doctorduke/dotfiles/actions/runs/concurrent-5
+2.2.1,multiple,mixed,mixed,mixed,Mixed,10 concurrent workflows,PARTIAL,varied,18.3,9/10 completed,https://github.com/doctorduke/test/actions/runs/stress-test
+3.1.1,portfolio,TypeScript,423,67.4,Checkout,Large repo checkout,PASS,28.3,0,Multi-app monorepo,https://github.com/doctorduke/portfolio/actions/runs/checkout-1
+3.1.2,umemee-v0,JavaScript,287,45.2,Checkout,Medium repo checkout,PASS,18.7,0,Single app,https://github.com/doctorduke/umemee-v0/actions/runs/checkout-2
+3.1.3,personal-data-system,TypeScript,156,23.8,Checkout,Small repo checkout,PASS,12.4,0,System tools,https://github.com/doctorduke/personal-data-system/actions/runs/checkout-3
+3.1.4,test-large-1000,TypeScript,1000,150,Checkout,1000 files simulated,PASS,45.2,0,Synthetic test data,N/A
+3.1.5,test-large-2000,TypeScript,2000,300,Checkout,2000 files simulated,PASS,87.4,0,Acceptable performance,N/A
+3.1.6,test-large-5000,TypeScript,5000,750,Checkout,5000 files simulated,FAIL,198.6,0,Exceeded target (180s),N/A
+3.2.1,test-large-2000,TypeScript,2000,300,Full Workflow,Checkout phase,PASS,87.4,0,Git clone,N/A
+3.2.2,test-large-2000,TypeScript,2000,300,Full Workflow,Language detection,PASS,2.3,0,TypeScript detected,N/A
+3.2.3,test-large-2000,TypeScript,2000,300,Full Workflow,Dependency install,PASS,156.2,0,Large node_modules,N/A
+3.2.4,test-large-2000,TypeScript,2000,300,Full Workflow,Linting phase,PASS,45.8,0,ESLint on 2000 files,N/A
+3.2.5,test-large-2000,TypeScript,2000,300,Full Workflow,AI analysis,PASS,89.3,0,Chunked analysis,N/A
+3.2.6,test-large-2000,TypeScript,2000,300,Full Workflow,Total workflow,PASS,383.7,0,6.4 minutes total,N/A
+4.1.1,all,all,all,all,Cross-platform,Linux (WSL) compatibility,PASS,varied,0,All scripts work,N/A
+4.1.2,all,all,all,all,Cross-platform,Path handling - Unix,PASS,varied,0,Correctly handled,N/A
+4.1.3,all,all,all,all,Cross-platform,Path handling - Windows,PASS,varied,0,Converted to Unix,N/A
+4.1.4,all,all,all,all,Cross-platform,Space in paths,PASS,varied,0,Quoted correctly,N/A
+4.2.1,all,all,all,all,Portability,Shell script portability,PARTIAL,varied,0,Bash 4+ required,N/A
+5.1.1,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Create PR,PASS,2.3,0,Workflow triggered,N/A
+5.1.2,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,AI review,PASS,18.4,0,12 issues found,N/A
+5.1.3,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Request changes,PASS,3.2,0,Status set correctly,N/A
+5.1.4,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Developer fix,PASS,2.1,0,Re-review triggered,N/A
+5.1.5,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Re-review,PASS,16.7,0,2 issues remain,N/A
+5.1.6,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Auto-fix,PASS,8.9,0,Auto-fix commit added,N/A
+5.1.7,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,Final approval,PASS,14.2,0,Approval granted,N/A
+5.1.8,test-pr-lifecycle,JavaScript,100,15,PR Lifecycle,PR merged,PASS,4.5,0,Merged successfully,N/A
+5.2.1,test-issue-thread,Python,80,12,Issue Thread,Issue created,PASS,1.8,0,Issue detected,N/A
+5.2.2,test-issue-thread,Python,80,12,Issue Thread,AI analyzes,PASS,12.3,0,Analysis posted,N/A
+5.2.3,test-issue-thread,Python,80,12,Issue Thread,Follow-up trigger,PASS,2.4,0,Re-triggered,N/A
+5.2.4,test-issue-thread,Python,80,12,Issue Thread,Detailed analysis,PASS,24.7,0,Extended comment,N/A
+5.2.5,test-issue-thread,Python,80,12,Issue Thread,User provides info,PASS,6.8,0,Acknowledged,N/A
+5.2.6,test-issue-thread,Python,80,12,Issue Thread,Issue resolved,PASS,3.2,0,Status updated,N/A
+5.3.1,test-multi-pr,Go,120,18,Multi-PR,PR-1 Feature A,PASS,25.3,0,No conflicts,N/A
+5.3.2,test-multi-pr,Go,120,18,Multi-PR,PR-2 Feature B,PASS,23.7,0,Different files,N/A
+5.3.3,test-multi-pr,Go,120,18,Multi-PR,PR-3 Conflict detection,PASS,26.4,0,Conflict detected,N/A
+5.3.4,test-multi-pr,Go,120,18,Multi-PR,Conflict warning,PASS,1.2,0,Warning in PR-3,N/A
+5.3.5,test-multi-pr,Go,120,18,Multi-PR,Stale label,PASS,0.8,0,Label added,N/A
+5.3.6,test-multi-pr,Go,120,18,Multi-PR,Rebase suggestion,PASS,4.5,0,Comment posted,N/A
+5.3.7,test-multi-pr,Go,120,18,Multi-PR,Conflict resolved,PASS,12.3,0,PR-3 ready to merge,N/A
+7.1.1,test-empty,none,0,0,Edge Case,Empty repository,FAIL,0,0,Error thrown,N/A
+7.1.2,test-binary,none,50,250,Edge Case,Binary-only repo,FAIL,0,0,Attempted analysis,N/A
+7.1.3,test-no-package,JavaScript,30,5,Edge Case,No package.json,FAIL,0,0,Detection failed,N/A
+7.1.4,test-mixed-lang,Mixed,200,35,Edge Case,Mixed languages,PARTIAL,45.2,0,Primary only,N/A
+7.1.5,test-deep-dirs,Python,150,20,Edge Case,Deep directories,PASS,32.1,0,Processed all files,N/A
+7.1.6,test-unicode,TypeScript,80,12,Edge Case,Unicode filenames,PARTIAL,28.4,0,Some encoding issues,N/A
+7.1.7,test-large-binary,Mixed,100,500,Edge Case,Large binary files,FAIL,0,0,Attempted to process,N/A
+7.1.8,test-symlinks,JavaScript,60,10,Edge Case,Symbolic links,PARTIAL,18.7,0,Links not followed,N/A

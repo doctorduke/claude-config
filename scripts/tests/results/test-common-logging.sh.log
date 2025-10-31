@@ -1,0 +1,2 @@
+=== Test Suite: Logging Functions - log_info ===
+  ✓ log_info outputs message

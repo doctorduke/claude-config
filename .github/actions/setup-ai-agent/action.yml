@@ -1,0 +1,506 @@
+name: 'Setup AI Agent Environment'
+description: 'Composite action to setup AI agent environment with dependencies, caching, and cross-platform support'
+author: 'Wave 3 Backend Architect'
+
+branding:
+  icon: 'cpu'
+  color: 'blue'
+
+inputs:
+  checkout-mode:
+    description: 'Checkout mode: sparse (default) or full'
+    required: false
+    default: 'sparse'
+
+  sparse-paths:
+    description: 'Paths to checkout in sparse mode (newline-separated)'
+    required: false
+    default: |
+      scripts/
+      .github/
+
+  language-stack:
+    description: 'Language stack to setup: node, python, go, multi, or none'
+    required: false
+    default: 'node'
+
+  node-version:
+    description: 'Node.js version to install (if language-stack includes node)'
+    required: false
+    default: '20'
+
+  python-version:
+    description: 'Python version to install (if language-stack includes python)'
+    required: false
+    default: '3.11'
+
+  go-version:
+    description: 'Go version to install (if language-stack includes go)'
+    required: false
+    default: '1.21'
+
+  install-gh-cli:
+    description: 'Install GitHub CLI if not present'
+    required: false
+    default: 'true'
+
+  setup-cache:
+    description: 'Enable dependency caching'
+    required: false
+    default: 'true'
+
+  cache-key-prefix:
+    description: 'Prefix for cache keys'
+    required: false
+    default: 'ai-agent'
+
+  install-tools:
+    description: 'Install additional tools (jq, yq, shellcheck)'
+    required: false
+    default: 'true'
+
+  setup-wsl:
+    description: 'Configure WSL environment if on Windows'
+    required: false
+    default: 'false'
+
+  validate-environment:
+    description: 'Validate environment after setup'
+    required: false
+    default: 'true'
+
+outputs:
+  config-path:
+    description: 'Path to the generated configuration directory'
+    value: ${{ steps.setup-config.outputs.config_path }}
+
+  tools-installed:
+    description: 'List of tools successfully installed'
+    value: ${{ steps.install-tools.outputs.tools_list }}
+
+  cache-hit:
+    description: 'Whether cache was hit for dependencies'
+    value: ${{ steps.cache-deps.outputs.cache_hit }}
+
+  platform:
+    description: 'Detected platform (linux, macos, windows)'
+    value: ${{ steps.detect-platform.outputs.platform }}
+
+  setup-time:
+    description: 'Time taken for setup in seconds'
+    value: ${{ steps.timing.outputs.duration }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Record start time
+      id: start-time
+      shell: bash
+      run: echo "start=$(date +%s)" >> $GITHUB_OUTPUT
+
+    - name: Detect platform
+      id: detect-platform
+      shell: bash
+      run: |
+        # Detect operating system
+        case "$RUNNER_OS" in
+          Linux)
+            platform="linux"
+            ;;
+          macOS)
+            platform="macos"
+            ;;
+          Windows)
+            platform="windows"
+            ;;
+          *)
+            platform="unknown"
+            ;;
+        esac
+
+        echo "platform=$platform" >> $GITHUB_OUTPUT
+        echo "Detected platform: $platform"
+
+        # Check if running in WSL
+        if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+          echo "wsl=true" >> $GITHUB_OUTPUT
+          echo "Running in WSL environment"
+        else
+          echo "wsl=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Checkout repository
+      if: inputs.checkout-mode != 'skip'
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: ${{ inputs.checkout-mode == 'sparse' && inputs.sparse-paths || '' }}
+        sparse-checkout-cone-mode: false
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      if: inputs.language-stack == 'node' || inputs.language-stack == 'multi'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.setup-cache == 'true' && 'npm' || '' }}
+
+    - name: Setup Python
+      if: inputs.language-stack == 'python' || inputs.language-stack == 'multi'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: ${{ inputs.setup-cache == 'true' && 'pip' || '' }}
+
+    - name: Setup Go
+      if: inputs.language-stack == 'go' || inputs.language-stack == 'multi'
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: ${{ inputs.setup-cache == 'true' }}
+
+    - name: Cache dependencies
+      id: cache-deps
+      if: inputs.setup-cache == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          ~/.cache/pip
+          ~/go/pkg/mod
+          ~/.local/share/gh
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ hashFiles('**/package-lock.json', '**/requirements.txt', '**/go.sum') }}
+        restore-keys: |
+          ${{ inputs.cache-key-prefix }}-${{ runner.os }}-
+
+    - name: Install GitHub CLI
+      id: install-gh
+      if: inputs.install-gh-cli == 'true'
+      shell: bash
+      run: |
+        echo "Checking for GitHub CLI..."
+
+        if command -v gh &> /dev/null; then
+          gh_version=$(gh --version | head -n1)
+          echo "GitHub CLI already installed: $gh_version"
+          echo "installed=true" >> $GITHUB_OUTPUT
+          echo "method=existing" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "Installing GitHub CLI..."
+        platform="${{ steps.detect-platform.outputs.platform }}"
+
+        case "$platform" in
+          linux)
+            # Install on Linux
+            if command -v apt-get &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y gh
+            elif command -v yum &> /dev/null; then
+              sudo yum install -y gh
+            else
+              # Fallback: download binary
+              curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+              sudo apt-get update
+              sudo apt-get install -y gh
+            fi
+            ;;
+
+          macos)
+            # Install on macOS
+            if command -v brew &> /dev/null; then
+              brew install gh
+            else
+              echo "Error: Homebrew not found. Cannot install gh CLI on macOS."
+              exit 1
+            fi
+            ;;
+
+          windows)
+            # Install on Windows
+            if command -v choco &> /dev/null; then
+              choco install gh -y
+            elif command -v winget &> /dev/null; then
+              winget install --id GitHub.cli
+            else
+              echo "Error: Neither chocolatey nor winget found. Cannot install gh CLI on Windows."
+              exit 1
+            fi
+            ;;
+
+          *)
+            echo "Error: Unsupported platform: $platform"
+            exit 1
+            ;;
+        esac
+
+        # Verify installation
+        if command -v gh &> /dev/null; then
+          gh_version=$(gh --version | head -n1)
+          echo "GitHub CLI installed successfully: $gh_version"
+          echo "installed=true" >> $GITHUB_OUTPUT
+          echo "method=new" >> $GITHUB_OUTPUT
+        else
+          echo "Error: GitHub CLI installation failed"
+          echo "installed=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Install additional tools
+      id: install-tools
+      if: inputs.install-tools == 'true'
+      shell: bash
+      run: |
+        echo "Installing additional tools..."
+
+        platform="${{ steps.detect-platform.outputs.platform }}"
+        tools_installed=()
+
+        # Function to check and install tool
+        install_tool() {
+          local tool=$1
+          local install_cmd=$2
+
+          if command -v "$tool" &> /dev/null; then
+            echo "$tool is already installed"
+            tools_installed+=("$tool")
+            return 0
+          fi
+
+          echo "Installing $tool..."
+          eval "$install_cmd" && tools_installed+=("$tool") || echo "Warning: Failed to install $tool"
+        }
+
+        case "$platform" in
+          linux)
+            install_tool "jq" "sudo apt-get install -y jq"
+            install_tool "yq" "sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq"
+            install_tool "shellcheck" "sudo apt-get install -y shellcheck"
+            ;;
+
+          macos)
+            if command -v brew &> /dev/null; then
+              install_tool "jq" "brew install jq"
+              install_tool "yq" "brew install yq"
+              install_tool "shellcheck" "brew install shellcheck"
+            fi
+            ;;
+
+          windows)
+            if command -v choco &> /dev/null; then
+              install_tool "jq" "choco install jq -y"
+              install_tool "yq" "choco install yq -y"
+              install_tool "shellcheck" "choco install shellcheck -y"
+            fi
+            ;;
+        esac
+
+        # Output installed tools
+        tools_list=$(IFS=,; echo "${tools_installed[*]}")
+        echo "tools_list=$tools_list" >> $GITHUB_OUTPUT
+        echo "Tools installed: $tools_list"
+
+    - name: Setup WSL environment
+      id: setup-wsl
+      if: inputs.setup-wsl == 'true' && steps.detect-platform.outputs.platform == 'windows'
+      shell: bash
+      run: |
+        echo "Configuring WSL environment..."
+
+        # Enable WSL if not already enabled
+        if ! command -v wsl &> /dev/null; then
+          echo "WSL not available, skipping WSL setup"
+          echo "configured=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Configure WSL settings
+        wsl --set-default-version 2
+
+        # Install required packages in WSL
+        wsl bash -c "sudo apt-get update && sudo apt-get install -y git curl jq"
+
+        echo "WSL environment configured"
+        echo "configured=true" >> $GITHUB_OUTPUT
+
+    - name: Setup configuration directory
+      id: setup-config
+      shell: bash
+      run: |
+        # Create configuration directory
+        config_dir="${RUNNER_TEMP}/ai-agent-config"
+        mkdir -p "$config_dir"
+
+        # Create default configuration
+        cat > "$config_dir/config.json" << 'EOF'
+        {
+          "platform": "${{ steps.detect-platform.outputs.platform }}",
+          "language_stack": "${{ inputs.language-stack }}",
+          "tools": {
+            "gh_cli": "${{ steps.install-gh.outputs.installed }}",
+            "jq": "$(command -v jq &> /dev/null && echo true || echo false)",
+            "yq": "$(command -v yq &> /dev/null && echo true || echo false)"
+          },
+          "cache": {
+            "enabled": "${{ inputs.setup-cache }}",
+            "hit": "${{ steps.cache-deps.outputs.cache-hit || 'false' }}"
+          }
+        }
+        EOF
+
+        echo "config_path=$config_dir" >> $GITHUB_OUTPUT
+        echo "Configuration directory created: $config_dir"
+
+    - name: Install script dependencies
+      id: install-deps
+      shell: bash
+      run: |
+        echo "Installing script dependencies..."
+
+        # Make scripts executable
+        if [[ -d scripts ]]; then
+          find scripts -type f -name "*.sh" -exec chmod +x {} \;
+          echo "Made all scripts executable"
+        fi
+
+        # Install Node.js dependencies if package.json exists
+        if [[ -f package.json ]] && [[ "${{ inputs.language-stack }}" == "node" || "${{ inputs.language-stack }}" == "multi" ]]; then
+          echo "Installing Node.js dependencies..."
+          npm ci || npm install
+        fi
+
+        # Install Python dependencies if requirements.txt exists
+        if [[ -f requirements.txt ]] && [[ "${{ inputs.language-stack }}" == "python" || "${{ inputs.language-stack }}" == "multi" ]]; then
+          echo "Installing Python dependencies..."
+          pip install -r requirements.txt
+        fi
+
+        # Install Go dependencies if go.mod exists
+        if [[ -f go.mod ]] && [[ "${{ inputs.language-stack }}" == "go" || "${{ inputs.language-stack }}" == "multi" ]]; then
+          echo "Installing Go dependencies..."
+          go mod download
+        fi
+
+        echo "Dependencies installed successfully"
+
+    - name: Validate environment
+      id: validate-env
+      if: inputs.validate-environment == 'true'
+      shell: bash
+      run: |
+        echo "Validating environment setup..."
+
+        validation_passed=true
+
+        # Check Git
+        if ! command -v git &> /dev/null; then
+          echo "Error: git not found"
+          validation_passed=false
+        else
+          echo "Git version: $(git --version)"
+        fi
+
+        # Check GitHub CLI
+        if [[ "${{ inputs.install-gh-cli }}" == "true" ]] && ! command -v gh &> /dev/null; then
+          echo "Error: gh CLI not found"
+          validation_passed=false
+        else
+          echo "GitHub CLI version: $(gh --version | head -n1)"
+        fi
+
+        # Check language-specific tools
+        case "${{ inputs.language-stack }}" in
+          node|multi)
+            if ! command -v node &> /dev/null; then
+              echo "Error: Node.js not found"
+              validation_passed=false
+            else
+              echo "Node.js version: $(node --version)"
+              echo "npm version: $(npm --version)"
+            fi
+            ;;
+          python|multi)
+            if ! command -v python &> /dev/null && ! command -v python3 &> /dev/null; then
+              echo "Error: Python not found"
+              validation_passed=false
+            else
+              python_cmd=$(command -v python3 || command -v python)
+              echo "Python version: $($python_cmd --version)"
+            fi
+            ;;
+          go|multi)
+            if ! command -v go &> /dev/null; then
+              echo "Error: Go not found"
+              validation_passed=false
+            else
+              echo "Go version: $(go version)"
+            fi
+            ;;
+        esac
+
+        # Check additional tools
+        if [[ "${{ inputs.install-tools }}" == "true" ]]; then
+          for tool in jq yq; do
+            if command -v "$tool" &> /dev/null; then
+              echo "$tool is available"
+            else
+              echo "Warning: $tool not found"
+            fi
+          done
+        fi
+
+        if [[ "$validation_passed" == "true" ]]; then
+          echo "Environment validation passed"
+          echo "validated=true" >> $GITHUB_OUTPUT
+        else
+          echo "Environment validation failed"
+          echo "validated=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Setup environment variables
+      id: setup-env
+      shell: bash
+      run: |
+        # Export common environment variables
+        echo "AI_AGENT_CONFIG_PATH=${{ steps.setup-config.outputs.config_path }}" >> $GITHUB_ENV
+        echo "AI_AGENT_PLATFORM=${{ steps.detect-platform.outputs.platform }}" >> $GITHUB_ENV
+        echo "AI_AGENT_TOOLS=${{ steps.install-tools.outputs.tools_list }}" >> $GITHUB_ENV
+
+        # Add scripts directory to PATH
+        if [[ -d scripts ]]; then
+          scripts_path="$(pwd)/scripts"
+          echo "$scripts_path" >> $GITHUB_PATH
+          echo "Added scripts directory to PATH: $scripts_path"
+        fi
+
+        echo "Environment variables configured"
+
+    - name: Calculate setup time
+      id: timing
+      shell: bash
+      run: |
+        start_time=${{ steps.start-time.outputs.start }}
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+
+        echo "duration=$duration" >> $GITHUB_OUTPUT
+        echo "Setup completed in ${duration}s"
+
+    - name: Setup summary
+      shell: bash
+      run: |
+        cat << 'EOF'
+        ========================================
+        AI Agent Environment Setup Complete
+        ========================================
+        Platform: ${{ steps.detect-platform.outputs.platform }}
+        Checkout Mode: ${{ inputs.checkout-mode }}
+        Language Stack: ${{ inputs.language-stack }}
+        Tools Installed: ${{ steps.install-tools.outputs.tools_list }}
+        Cache Hit: ${{ steps.cache-deps.outputs.cache-hit || 'N/A' }}
+        Setup Time: ${{ steps.timing.outputs.duration }}s
+        Config Path: ${{ steps.setup-config.outputs.config_path }}
+        ========================================
+        EOF

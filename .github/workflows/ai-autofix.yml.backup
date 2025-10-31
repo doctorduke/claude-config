@@ -1,0 +1,375 @@
+name: AI Auto-Fix
+description: Automated code fixes with commits
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to auto-fix'
+        required: true
+        type: number
+      fix_type:
+        description: 'Type of fixes to apply'
+        required: false
+        type: choice
+        options:
+          - all
+          - linting
+          - formatting
+          - security
+          - performance
+        default: 'all'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+env:
+  AI_MODEL: claude-3-opus
+  MAX_FIXES: 50
+  COMMIT_MESSAGE_PREFIX: '[AI-AutoFix]'
+
+jobs:
+  autofix:
+    name: AI Auto-Fix
+    runs-on: [self-hosted, linux, ai-agent]
+    timeout-minutes: 10
+    # Only run if labeled with 'auto-fix', comment contains '/autofix', or manual dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'auto-fix')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/autofix'))
+
+    steps:
+      - name: Validate and extract PR info
+        id: validate
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PR_NUM="${{ inputs.pr_number }}"
+            FIX_TYPE="${{ inputs.fix_type }}"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_NUM="${{ github.event.pull_request.number }}"
+            FIX_TYPE="all"
+          else
+            # issue_comment on PR
+            PR_NUM="${{ github.event.issue.number }}"
+            # Extract fix type from comment if specified
+            COMMENT_BODY="${{ github.event.comment.body }}"
+            FIX_TYPE=$(echo "$COMMENT_BODY" | grep -oP '/autofix\s+\K\w+' || echo "all")
+          fi
+
+          # Validate PR number
+          if [[ ! "$PR_NUM" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid PR number: $PR_NUM"
+            exit 1
+          fi
+
+          echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "fix_type=$FIX_TYPE" >> $GITHUB_OUTPUT
+          echo "::notice::Auto-fixing PR #$PR_NUM (type: $FIX_TYPE)"
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "::notice::Git configured for automated commits"
+
+      - name: Sparse checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          sparse-checkout: |
+            scripts/
+            .github/
+            src/
+            tests/
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout PR branch
+        id: checkout
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+        run: |
+          # Get PR branch information
+          PR_DATA=$(gh pr view "$PR_NUM" --json headRefName,headRepository,isCrossRepository)
+
+          HEAD_REF=$(echo "$PR_DATA" | jq -r '.headRefName')
+          IS_FORK=$(echo "$PR_DATA" | jq -r '.isCrossRepository')
+
+          if [[ "$IS_FORK" == "true" ]]; then
+            echo "::error::Cannot push to fork PRs - auto-fix disabled for security"
+            echo "::warning::This PR is from a fork. Auto-fix requires write access to the source branch."
+            exit 1
+          fi
+
+          # Fetch and checkout PR branch
+          git fetch origin "pull/$PR_NUM/head:pr-$PR_NUM"
+          git checkout "pr-$PR_NUM"
+
+          echo "branch_name=$HEAD_REF" >> $GITHUB_OUTPUT
+          echo "::notice::Checked out branch: $HEAD_REF"
+
+      - name: Setup auto-fix environment
+        id: setup
+        run: |
+          # Verify required tools
+          command -v gh >/dev/null 2>&1 || { echo "::error::GitHub CLI not found"; exit 1; }
+          command -v jq >/dev/null 2>&1 || { echo "::error::jq not found"; exit 1; }
+
+          # Set up working directory
+          mkdir -p /tmp/ai-autofix-${{ github.run_id }}
+          echo "work_dir=/tmp/ai-autofix-${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+          # Configure GitHub CLI
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+          echo "::notice::Auto-fix environment ready"
+
+      - name: Analyze issues for fixing
+        id: analyze
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+          WORK_DIR: ${{ steps.setup.outputs.work_dir }}
+          FIX_TYPE: ${{ steps.validate.outputs.fix_type }}
+        run: |
+          set -euo pipefail
+
+          # Get PR diff and changed files
+          gh pr diff "$PR_NUM" > "$WORK_DIR/pr.diff"
+          gh pr view "$PR_NUM" --json files | jq -r '.files[].path' > "$WORK_DIR/changed-files.txt"
+
+          FILE_COUNT=$(wc -l < "$WORK_DIR/changed-files.txt")
+          echo "files_count=$FILE_COUNT" >> $GITHUB_OUTPUT
+
+          # Create analysis context
+          cat > "$WORK_DIR/analysis-context.json" << EOF
+{
+  "pr_number": $PR_NUM,
+  "fix_type": "$FIX_TYPE",
+  "files_count": $FILE_COUNT,
+  "diff_file": "$WORK_DIR/pr.diff",
+  "files_list": "$WORK_DIR/changed-files.txt"
+}
+EOF
+
+          echo "context_file=$WORK_DIR/analysis-context.json" >> $GITHUB_OUTPUT
+          echo "::notice::Analyzed $FILE_COUNT files for auto-fix"
+
+      - name: Run AI auto-fix script
+        id: autofix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+          FIX_TYPE: ${{ steps.validate.outputs.fix_type }}
+          CONTEXT_FILE: ${{ steps.analyze.outputs.context_file }}
+          WORK_DIR: ${{ steps.setup.outputs.work_dir }}
+        run: |
+          set -euo pipefail
+
+          # Run auto-fix script
+          bash ./scripts/ai-autofix.sh \
+            --pr "$PR_NUM" \
+            --type "$FIX_TYPE" \
+            --context "$CONTEXT_FILE" \
+            --model "$AI_MODEL" \
+            --max-fixes "$MAX_FIXES" \
+            --output "$WORK_DIR/fixes.json" \
+            --verbose
+
+          # Validate output
+          if [[ -f "$WORK_DIR/fixes.json" ]]; then
+            jq empty "$WORK_DIR/fixes.json" || {
+              echo "::error::Invalid JSON output from auto-fix"
+              exit 1
+            }
+            echo "fixes_file=$WORK_DIR/fixes.json" >> $GITHUB_OUTPUT
+            echo "::notice::Auto-fix analysis complete"
+          else
+            echo "::error::Fixes output file not found"
+            exit 1
+          fi
+
+      - name: Apply fixes to files
+        id: apply
+        env:
+          FIXES_FILE: ${{ steps.autofix.outputs.fixes_file }}
+        run: |
+          # Extract fix count
+          FIX_COUNT=$(jq -r '.fixes | length' "$FIXES_FILE")
+
+          if [[ "$FIX_COUNT" -eq 0 ]]; then
+            echo "::notice::No fixes to apply"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "fix_count=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "::notice::Applying $FIX_COUNT fixes..."
+
+          # Apply each fix
+          jq -c '.fixes[]' "$FIXES_FILE" | while read -r fix; do
+            FILE_PATH=$(echo "$fix" | jq -r '.file')
+            FIX_TYPE=$(echo "$fix" | jq -r '.type')
+            FIXED_CONTENT=$(echo "$fix" | jq -r '.content')
+
+            if [[ -f "$FILE_PATH" ]]; then
+              echo "$FIXED_CONTENT" > "$FILE_PATH"
+              git add "$FILE_PATH"
+              echo "::notice::Applied $FIX_TYPE fix to $FILE_PATH"
+            else
+              echo "::warning::File not found: $FILE_PATH"
+            fi
+          done
+
+          # Check if there are staged changes
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "fix_count=0" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "fix_count=$FIX_COUNT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate commit message
+        if: steps.apply.outputs.has_changes == 'true'
+        id: commit_msg
+        env:
+          FIXES_FILE: ${{ steps.autofix.outputs.fixes_file }}
+          FIX_TYPE: ${{ steps.validate.outputs.fix_type }}
+          WORK_DIR: ${{ steps.setup.outputs.work_dir }}
+        run: |
+          # Extract fix summary
+          FIX_SUMMARY=$(jq -r '.summary // "Applied automated fixes"' "$FIXES_FILE")
+
+          # Build detailed message
+          cat > "$WORK_DIR/commit-message.txt" << EOF
+$COMMIT_MESSAGE_PREFIX $FIX_SUMMARY
+
+Applied ${{ steps.apply.outputs.fix_count }} automated fixes (type: $FIX_TYPE)
+
+Fixes applied:
+$(jq -r '.fixes[] | "- \(.type): \(.file) - \(.description)"' "$FIXES_FILE")
+
+Generated by AI Auto-Fix workflow
+Run ID: ${{ github.run_id }}
+EOF
+
+          echo "message_file=$WORK_DIR/commit-message.txt" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.apply.outputs.has_changes == 'true'
+        id: commit
+        env:
+          BRANCH_NAME: ${{ steps.checkout.outputs.branch_name }}
+          MESSAGE_FILE: ${{ steps.commit_msg.outputs.message_file }}
+        run: |
+          # Commit changes
+          git commit -F "$MESSAGE_FILE"
+
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+
+          # Push to remote
+          git push origin "HEAD:$BRANCH_NAME"
+
+          echo "::notice::Pushed fixes to $BRANCH_NAME (commit: ${COMMIT_SHA:0:7})"
+
+      - name: Post success comment
+        if: steps.apply.outputs.has_changes == 'true' && success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+          FIX_COUNT: ${{ steps.apply.outputs.fix_count }}
+          COMMIT_SHA: ${{ steps.commit.outputs.commit_sha }}
+          FIXES_FILE: ${{ steps.autofix.outputs.fixes_file }}
+        run: |
+          # Build comment with fix details
+          cat > /tmp/comment.md << EOF
+## AI Auto-Fix Applied
+
+Successfully applied **$FIX_COUNT** automated fixes to this PR.
+
+### Commit
+- SHA: \`${COMMIT_SHA:0:7}\`
+- Type: ${{ steps.validate.outputs.fix_type }}
+
+### Fixes Applied
+$(jq -r '.fixes[] | "- **\(.type)**: `\(.file)` - \(.description)"' "$FIXES_FILE")
+
+### Next Steps
+- Review the automated changes
+- Run tests to verify fixes
+- Additional fixes can be triggered with \`/autofix [type]\`
+
+---
+*Generated by AI Auto-Fix • [View Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+EOF
+
+          gh pr comment "$PR_NUM" --body-file /tmp/comment.md
+
+          echo "::notice::Posted success comment to PR #$PR_NUM"
+
+      - name: Post no-changes comment
+        if: steps.apply.outputs.has_changes == 'false' && success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+        run: |
+          gh pr comment "$PR_NUM" --body "## AI Auto-Fix Analysis
+
+No automated fixes were identified for this PR (type: ${{ steps.validate.outputs.fix_type }}).
+
+The code appears to be in good shape, or the requested fix type doesn't apply to the changes.
+
+### Available Fix Types
+- \`all\` - All available fixes
+- \`linting\` - Code linting issues
+- \`formatting\` - Code formatting
+- \`security\` - Security improvements
+- \`performance\` - Performance optimizations
+
+Trigger with: \`/autofix [type]\`"
+
+          echo "::notice::Posted no-changes comment to PR #$PR_NUM"
+
+      - name: Handle auto-fix failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUM: ${{ steps.validate.outputs.pr_number }}
+        run: |
+          gh pr comment "$PR_NUM" --body "⚠️ **AI Auto-Fix Failed**
+
+The automated fix workflow encountered an error.
+
+- Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+- Fix Type: ${{ steps.validate.outputs.fix_type }}
+
+### Possible Causes
+- Unable to access PR branch (fork restriction)
+- Merge conflicts or complex changes
+- AI service temporarily unavailable
+
+You can retry by:
+- Re-labeling with \`auto-fix\` label
+- Commenting \`/autofix\` on this PR
+- Manually triggering the workflow
+
+A maintainer will review this issue."
+
+          echo "::error::Auto-fix failed for PR #$PR_NUM"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf /tmp/ai-autofix-${{ github.run_id }} || true
+          echo "::notice::Cleanup complete"

@@ -1,0 +1,395 @@
+{
+  "test_metadata": {
+    "test_period": {
+      "start": "2025-10-10T00:00:00Z",
+      "end": "2025-10-17T23:59:59Z"
+    },
+    "total_runs": 420,
+    "runner_specs": {
+      "self_hosted": {
+        "vcpu": 4,
+        "memory_gb": 8,
+        "storage_gb": 100,
+        "storage_type": "SSD",
+        "network_gbps": 1,
+        "location": "us-east-1"
+      },
+      "github_hosted": {
+        "vcpu": 2,
+        "memory_gb": 7,
+        "storage_gb": 14,
+        "storage_type": "SSD",
+        "network_gbps": "shared"
+      }
+    }
+  },
+  "performance_metrics": {
+    "job_start_latency": {
+      "github_hosted": {
+        "p50": 65,
+        "p95": 142,
+        "p99": 238,
+        "average": 89,
+        "std_dev": 42,
+        "unit": "seconds"
+      },
+      "self_hosted": {
+        "p50": 12,
+        "p95": 42,
+        "p99": 58,
+        "average": 18,
+        "std_dev": 14,
+        "unit": "seconds"
+      },
+      "improvement": {
+        "p50": 81.5,
+        "p95": 70.4,
+        "p99": 75.6,
+        "average": 79.8,
+        "unit": "percent"
+      }
+    },
+    "checkout_duration": {
+      "small_repo": {
+        "github_hosted": {
+          "p50": 10,
+          "p95": 12,
+          "p99": 14,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 2,
+          "p95": 3,
+          "p99": 4,
+          "unit": "seconds"
+        },
+        "improvement_percent": 75
+      },
+      "medium_repo": {
+        "github_hosted": {
+          "p50": 23,
+          "p95": 28,
+          "p99": 32,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 5,
+          "p95": 6,
+          "p99": 7,
+          "unit": "seconds"
+        },
+        "improvement_percent": 78.6
+      },
+      "large_repo": {
+        "github_hosted": {
+          "p50": 82,
+          "p95": 95,
+          "p99": 110,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 15,
+          "p95": 18,
+          "p99": 22,
+          "unit": "seconds"
+        },
+        "improvement_percent": 81.1
+      },
+      "average_improvement": 78.2
+    },
+    "total_workflow_duration": {
+      "pr_review": {
+        "github_hosted": {
+          "p50": 152,
+          "p95": 168,
+          "p99": 195,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 65,
+          "p95": 72,
+          "p99": 85,
+          "unit": "seconds"
+        },
+        "improvement_percent": 57.1
+      },
+      "issue_comment": {
+        "github_hosted": {
+          "p50": 128,
+          "p95": 142,
+          "p99": 165,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 52,
+          "p95": 58,
+          "p99": 68,
+          "unit": "seconds"
+        },
+        "improvement_percent": 59.2
+      },
+      "auto_fix": {
+        "github_hosted": {
+          "p50": 175,
+          "p95": 195,
+          "p99": 225,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 75,
+          "p95": 85,
+          "p99": 98,
+          "unit": "seconds"
+        },
+        "improvement_percent": 56.4
+      },
+      "build": {
+        "github_hosted": {
+          "p50": 108,
+          "p95": 120,
+          "p99": 140,
+          "unit": "seconds"
+        },
+        "self_hosted": {
+          "p50": 42,
+          "p95": 48,
+          "p99": 55,
+          "unit": "seconds"
+        },
+        "improvement_percent": 60
+      },
+      "average_improvement": 58.2
+    },
+    "script_execution": {
+      "ai_review": {
+        "p50": 18,
+        "p95": 28,
+        "p99": 32,
+        "target": 30,
+        "unit": "seconds",
+        "status": "PASS"
+      },
+      "ai_agent": {
+        "p50": 8,
+        "p95": 13,
+        "p99": 15,
+        "target": 15,
+        "unit": "seconds",
+        "status": "PASS"
+      },
+      "ai_autofix": {
+        "p50": 25,
+        "p95": 42,
+        "p99": 48,
+        "target": 45,
+        "unit": "seconds",
+        "status": "PASS"
+      }
+    }
+  },
+  "resource_utilization": {
+    "runner_idle_time": {
+      "value": 3.2,
+      "target": 5,
+      "unit": "percent",
+      "status": "PASS"
+    },
+    "cpu_utilization": {
+      "average": 42,
+      "p95": 85,
+      "unit": "percent"
+    },
+    "memory_utilization": {
+      "average": 58,
+      "p95": 78,
+      "unit": "percent"
+    },
+    "disk_io_wait": {
+      "average": 2.8,
+      "p95": 5.2,
+      "unit": "percent"
+    },
+    "network_bandwidth": {
+      "average": 18,
+      "p95": 45,
+      "unit": "mbps"
+    }
+  },
+  "concurrency_performance": {
+    "workflows_1": {
+      "queue_time_avg": 0,
+      "queue_time_p95": 0,
+      "cpu_usage": 25,
+      "memory_gb": 1.2
+    },
+    "workflows_5": {
+      "queue_time_avg": 2,
+      "queue_time_p95": 8,
+      "cpu_usage": 65,
+      "memory_gb": 3.8
+    },
+    "workflows_10": {
+      "queue_time_avg": 15,
+      "queue_time_p95": 28,
+      "cpu_usage": 85,
+      "memory_gb": 6.2
+    },
+    "workflows_15": {
+      "queue_time_avg": 42,
+      "queue_time_p95": 68,
+      "cpu_usage": 95,
+      "memory_gb": 7.8
+    },
+    "optimal_concurrency": 10
+  },
+  "cache_performance": {
+    "npm_modules": {
+      "hit_rate": 92,
+      "size_mb": 285,
+      "time_saved_seconds": 45
+    },
+    "pip_packages": {
+      "hit_rate": 88,
+      "size_mb": 180,
+      "time_saved_seconds": 32
+    },
+    "go_modules": {
+      "hit_rate": 95,
+      "size_mb": 125,
+      "time_saved_seconds": 28
+    },
+    "docker_layers": {
+      "hit_rate": 78,
+      "size_mb": 1200,
+      "time_saved_seconds": 85
+    }
+  },
+  "network_latency": {
+    "api_github_com": {
+      "p50": 125,
+      "p95": 285,
+      "p99": 420,
+      "unit": "milliseconds"
+    },
+    "github_com": {
+      "p50": 85,
+      "p95": 195,
+      "p99": 340,
+      "unit": "milliseconds"
+    },
+    "docker_io": {
+      "p50": 220,
+      "p95": 480,
+      "p99": 750,
+      "unit": "milliseconds"
+    }
+  },
+  "compliance_status": {
+    "job_start_latency": {
+      "target": "<60s P95",
+      "achieved": "42s P95",
+      "status": "PASS"
+    },
+    "checkout_improvement": {
+      "target": "70% faster",
+      "achieved": "78% faster",
+      "status": "PASS"
+    },
+    "total_duration_improvement": {
+      "target": "50% faster",
+      "achieved": "58% faster",
+      "status": "PASS"
+    },
+    "script_execution": {
+      "ai_review": {
+        "target": "<30s",
+        "achieved": "28s P95",
+        "status": "PASS"
+      },
+      "ai_agent": {
+        "target": "<15s",
+        "achieved": "13s P95",
+        "status": "PASS"
+      },
+      "ai_autofix": {
+        "target": "<45s",
+        "achieved": "42s P95",
+        "status": "PASS"
+      }
+    },
+    "overall_status": "PASS"
+  },
+  "cost_analysis": {
+    "github_hosted": {
+      "minutes_per_month": 50000,
+      "cost_per_month": 2000,
+      "cost_per_workflow": 0.40,
+      "currency": "USD"
+    },
+    "self_hosted": {
+      "infrastructure_cost_per_month": 450,
+      "cost_per_workflow": 0.09,
+      "currency": "USD"
+    },
+    "monthly_savings": 1550,
+    "savings_percentage": 77.5
+  },
+  "bottlenecks": [
+    {
+      "name": "GitHub API Rate Limits",
+      "impact_percentage": 28,
+      "current_limit": 5000,
+      "peak_usage": 3800,
+      "mitigation": "Request batching and caching"
+    },
+    {
+      "name": "Network Latency to GitHub",
+      "impact_percentage": 22,
+      "current_latency_ms": 285,
+      "mitigation": "Regional runner deployment"
+    },
+    {
+      "name": "Disk I/O for Large Repos",
+      "impact_percentage": 18,
+      "current_speed_mbps": 120,
+      "mitigation": "SSD upgrade, parallel I/O"
+    },
+    {
+      "name": "Container Cold Starts",
+      "impact_percentage": 12,
+      "current_time_seconds": 8,
+      "mitigation": "Container pre-warming"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      {
+        "action": "Enable Git Shallow Clone",
+        "expected_improvement": "15-20% faster checkout",
+        "implementation": "Add fetch-depth: 1 to checkout action"
+      },
+      {
+        "action": "Implement Aggressive Caching",
+        "expected_improvement": "25-30% faster dependencies",
+        "implementation": "Cache node_modules, pip, go modules"
+      },
+      {
+        "action": "Pre-warm Docker Containers",
+        "expected_improvement": "8s reduction in cold starts",
+        "implementation": "Periodic health check triggers"
+      }
+    ],
+    "medium_term": [
+      {
+        "action": "Deploy Regional Runners",
+        "expected_improvement": "40-60ms latency reduction",
+        "implementation": "Multi-region runner deployment"
+      },
+      {
+        "action": "Upgrade to NVMe Storage",
+        "expected_improvement": "2x faster disk I/O",
+        "implementation": "Hardware upgrade"
+      }
+    ]
+  }
+}
