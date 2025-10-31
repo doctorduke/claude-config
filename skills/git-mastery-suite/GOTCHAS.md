@@ -382,11 +382,8 @@ git push --force --all
 ### Understanding Conflict Markers
 
 ```
-<<<<<<< HEAD
 Our version
-=======
 Their version
->>>>>>> branch-name
 ```
 
 ### Viewing All Three Versions

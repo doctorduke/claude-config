@@ -18,7 +18,7 @@
       "Bash(gh:*)",
       "Bash(gh auth:*)",
       "Bash(cat:*)",
-<<<<<<< HEAD
+
       "Bash(git config:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
@@ -28,11 +28,8 @@
       "Bash(git log:*)",
       "WebSearch",
       "WebFetch(domain:mikhail.io)",
-      "WebFetch(domain:support.claude.com)"
-=======
+      "WebFetch(domain:support.claude.com)",
       "Bash(for pkg in core config api-client ui-mobile ui-web; do cp packages/types/tsconfig.json packages/$pkg/tsconfig.json; done)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(chmod:*)",
       "Bash(pnpm typecheck:*)",
       "Bash(for pkg in api-client config core types ui-mobile ui-web; do sed -i '' '/\"\"rootDir\"\"/d' packages/$pkg/tsconfig.json; sed -i '' 's/\"\"noEmit\"\": true,/\"\"noEmit\"\": false,\\n    \"\"declaration\"\": true,\\n    \"\"declarationMap\"\": true,\\n    \"\"emitDeclarationOnly\"\": true,/' packages/$pkg/tsconfig.json; done)",
@@ -68,7 +65,6 @@
       "Bash(find:*)",
       "mcp__github__create_issue",
       "Bash(mv:*)",
-      "Bash(git config:*)",
       "mcp__github__get_issue",
       "Bash(python3:*)",
       "mcp__github__get_pull_request_reviews",
@@ -80,7 +76,6 @@
       "Bash(git diff:*)",
       "mcp__github__add_issue_comment",
       "Bash(tail:*)",
-      "Bash(echo:*)",
       "Bash(pnpm lint:newlines:*)",
       "Bash(pnpm test:*)",
       "Bash(awk:*)",
@@ -90,9 +85,8 @@
       "mcp__github__search_issues",
       "Bash(./docs/agent-coordination/_reference/patterns/validate-core.sh:*)",
       "Bash(npx tsc:*)",
-      "Bash(jq:*)",
-      "Bash(git log:*)"
->>>>>>> origin/trunk
+      "Bash(jq:*)"
+
     ],
     "deny": [],
     "ask": []
