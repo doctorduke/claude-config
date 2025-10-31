@@ -1,194 +1,164 @@
-# Umemee v0
+# Claude Configuration Module
 
-**Status:** In Design & Early Development
-**Platforms:** Mobile (Expo/React Native), Web (Next.js 15+), Desktop (Migrating to Tauri)
-
-A **media-first social platform** focused on meme sharing, galleries, and threaded conversation. Built as a monorepo showcasing bleeding-edge development practices with AI assistance.
+Reusable Claude Code configuration, skills, agents, hooks, and utilities that can be shared across projects via git subtree.
 
 ## Overview
 
-Umemee is a block-based content platform designed for visual storytelling and community interaction. Key features include:
+This module provides:
+- **192 Agent Definitions** - Specialized AI agents for various domains
+- **126 Skill Frameworks** - Reusable skill templates and patterns
+- **16 Hook Scripts** - Log sanitization and session management
+- **Utilities** - Parsers, filters, and core utilities
+- **Configuration Templates** - Reusable configs and thresholds
+- **Documentation** - Guides and reference materials
 
-- **Block-based posts** (title, meme image, and optional blocks like text, video, GIF, code, file)
-- **Quick Commenter** (reply with title + image, promotable to a full post)
-- **Composer** with block caps (default 5 per post) and automatic gallery splitting
-- **Floating Page UI** with smooth transitions and minimizable panes (on web)
-- **Meme dumps/galleries** (multi-post groups stitched into a continuous viewer)
-- **Meme templates** (create from predefined layouts, fill text/image segments)
-- **Community moderation** (notes/flags, credibility scoring)
-- **Attribution & claims** (unclaimed handles like `unclaimed.ted25.twitter` that can be claimed by original creators)
-- **Monetization** via physical goods (dropshipping/licensing) and subscriptions (no ads by default)
-
-## Current State
-
-- **Mobile app** scaffolded with Expo + React Navigation
-- **Web app** scaffolded with Next.js 15 App Router with Turbopack
-- **Desktop app** currently disabled, migrating from Electron to Tauri (see [platforms/desktop/MIGRATION-TO-TAURI.md](platforms/desktop/MIGRATION-TO-TAURI.md))
-- Shared packages (`@umemee/types`, `@umemee/config`, `@umemee/utils`, `@umemee/api-client`, `@umemee/ui-web`, `@umemee/ui-mobile`) wired in
-- Mock mode planned for both apps (`USE_MOCK_DATA=true`)
-- Advanced features (floating pages, composer, templates, attribution) are **specified but not yet implemented**
-
-## Architecture
+## Directory Structure
 
 ```
-umemee-v0/
-├── platforms/
-│   ├── mobile/     # React Native (Expo) - iOS/Android
-│   ├── web/        # Next.js 15+ with App Router - Responsive web + PWA
-│   └── desktop/    # (Migrating) Tauri - Windows/Mac/Linux
-├── shared/
-│   ├── ui-mobile/  # React Native components
-│   ├── ui-web/     # Web-adapted components
-│   ├── api-client/ # Unified API layer
-│   ├── core/       # Business logic
-│   ├── types/      # TypeScript definitions (foundational)
-│   ├── config/     # Shared configurations
-│   └── utils/      # Common utilities
-├── core-modules/   # (Planned) Core business logic modules
-├── services/       # (Planned) Backend services via Git subtrees
-└── tools/          # Development tools (subtree/worktree management)
+.claude/
+├── README.md              # This file
+├── SUBTREE_USAGE.md       # Git subtree usage guide
+├── QUICK_START.md         # Quick start guide
+├── agents/                # Agent definitions (192 files)
+├── skills/                # Skill frameworks (126 files)
+├── hooks/                  # Hook scripts (16 files)
+├── lib/                    # Utilities and parsers (5 files)
+├── config/                 # Configuration templates (6 files)
+├── docs/                   # Documentation (5 files)
+├── commands/               # Command templates (4 files)
+├── expertise/              # Expertise docs (1 file)
+└── tests/                  # Test scripts (1 file)
 ```
 
-## Tech Stack
+## Quick Start
 
-- **Monorepo**: Turborepo + pnpm (>= 9.0.0) for optimal build performance
-- **Mobile**: React Native + Expo
-- **Web**: Next.js 15+ with App Router, BFF pattern + PWA, Turbopack
-- **Desktop**: Tauri (migrating from Electron)
-- **Shared**: TypeScript (strict mode), modular packages with workspace protocol
-- **State Management**: TanStack Query, Zustand, React Hook Form + Zod
-- **CI/CD**: GitHub Actions with platform-specific pipelines
-- **Testing**: Jest (unit), Detox (mobile E2E), Playwright (web E2E, to be added)
+### Using as Subtree
 
-## Development
+1. **Add to your repository**:
+   ```bash
+   git subtree add \
+     --prefix=.claude \
+     git@github.com:doctorduke/claude-config.git \
+     main \
+     --squash
+   ```
 
+2. **Configure hooks** (in Claude Code):
+   ```bash
+   /hooks
+   # Add PostToolUse -> Bash -> .claude/hooks/sanitize_bash_output.sh
+   ```
+
+3. **Register agents**: Agents are automatically available in `agents/`
+
+See [SUBTREE_USAGE.md](SUBTREE_USAGE.md) for detailed instructions.
+
+## Components
+
+### Agents (`agents/`)
+192 specialized agent definitions covering:
+- Development (backend-architect, frontend-developer, etc.)
+- Architecture (ai-systems-architect, cloud-architect, etc.)
+- Security (security-architect, security-auditor, etc.)
+- Operations (devops-troubleshooter, incident-responder, etc.)
+- Data & AI (data-scientist, mlops-engineer, ai-engineer, etc.)
+- And many more...
+
+### Skills (`skills/`)
+126 skill framework files including:
+- Architecture evaluation framework
+- Multi-agent coordination framework
+- Context engineering framework
+- Security scanning suite
+- Test-driven development framework
+- And more...
+
+### Hooks (`hooks/`)
+16 hook scripts for:
+- Log sanitization (PostToolUse)
+- Token waste estimation (PreToolUse)
+- Session management (SessionStart/End)
+- And more...
+
+### Utilities (`lib/`)
+5 utility files:
+- Parsers (npm, node, python, generic)
+- Filters
+- Core utilities
+
+### Configuration (`config/`)
+6 configuration files:
+- Parser configurations
+- Thresholds
+- Templates
+
+## Distribution
+
+This module is designed to be distributed as a **Git subtree**, allowing it to maintain the same folder structure across repositories while enabling easy updates.
+
+## Files NOT Included
+
+These files are excluded from the subtree (project-specific):
+- `logs/` - Generated log files
+- `settings.local.json` - Local project settings
+- `*.local.*` - Local configuration files
+- `investigation-*.md` - Project-specific investigations
+- `orchestration-*.md` - Project-specific docs
+
+## Usage
+
+### Automatic Agent Invocation
+Claude Code automatically uses agents based on task context.
+
+### Explicit Agent Invocation
+```
+"Use the backend-architect to design this API"
+"Have the security-auditor scan for vulnerabilities"
+```
+
+### Custom Agents
+Add custom agents locally:
 ```bash
-# Install dependencies
-pnpm install
-
-# Run all apps in development
-pnpm dev
-
-# Build all apps
-pnpm build
-
-# Run tests
-pnpm test
-
-# Type checking
-pnpm typecheck
-
-# Linting
-pnpm lint
-
-# Format code
-pnpm format
-
-# Clean build artifacts
-pnpm clean
+# Create .claude/agents/my-agent.md
+# This file stays local (not in subtree)
 ```
 
-## Platform-Specific Commands
+### Local Configuration
+Use `settings.local.json` for project-specific settings:
+```json
+{
+  "project": "my-project",
+  "custom_settings": "value"
+}
+```
+This file is gitignored and stays local.
 
-### Mobile
+## Updates
+
+### Pull Updates
 ```bash
-pnpm dev --filter=@umemee/mobile     # Start Expo dev server
-pnpm ios --filter=@umemee/mobile     # Run on iOS simulator
-pnpm android --filter=@umemee/mobile # Run on Android emulator
-pnpm build --filter=@umemee/mobile   # Export for production
+git subtree pull \
+  --prefix=.claude \
+  git@github.com:doctorduke/claude-config.git \
+  main \
+  --squash
 ```
 
-### Web
+### Push Changes Back
 ```bash
-pnpm dev --filter=@umemee/web        # Start Next.js dev server with Turbopack
-pnpm build --filter=@umemee/web      # Production build
-pnpm start --filter=@umemee/web      # Start production server
+git subtree push \
+  --prefix=.claude \
+  git@github.com:doctorduke/claude-config.git \
+  main
 ```
 
-### Desktop (Currently Disabled)
-```bash
-# Desktop commands temporarily disabled during Tauri migration
-# See platforms/desktop/MIGRATION-TO-TAURI.md for details
-# Will be re-enabled with Tauri
-```
+## See Also
 
-## Planned Features (MVP Scope)
-
-### Content
-- Posts contain:
-  - **Title** (always first)
-  - **Main meme block** (image or video)
-  - Up to **5 blocks per post** (text, image, video, GIF, quote, poll, code, file)
-- Additional posts auto-group into a **gallery (post_group)**
-- Comments can target **posts, blocks, or block segments**
-
-### Interaction
-- Like / Meh / Dislike reactions
-- Quick Commenter: reply with Title + Image → creates child post + comment
-- Composer: drag-to-reorder blocks, "Add Block" vs. "Add Post Card"
-
-### UI/UX
-- **Floating Pages** with shared-element transitions
-- On web: Floating Pages can **minimize into panes** (Gmail chat style)
-- Feed supports **grid view, swipe view, and meme chains**
-- Comments revealed progressively below posts, with block-anchored options
-
-### Moderation
-- Machine filters (Perspective, Rekognition)
-- Community notes and flags with credibility scoring
-- Visibility tiers (contextualized, soft-hidden, hidden)
-
-### Monetization
-- Physical goods (print-on-demand, licensing)
-- Subscription options:
-  - Creator subscriptions
-  - Platform membership (ad-free, early access)
-- Attribution model shares revenue between reposter and original creator when claimed
-
-## Git Workflow
-
-This repository uses:
-- **Feature branches**: Create from `trunk` branch
-- **Git Worktrees**: For parallel feature development (see [tools/worktree/](tools/worktree/))
-- **Git Subtrees**: For modular service integration (see [tools/subtree/](tools/subtree/))
-- **Conventional Commits**: For automated versioning with changesets
-
-## Roadmap (Next Steps)
-
-1. Align dependencies and scripts with documentation
-2. Implement Floating Page navigation with animations
-3. Build Quick Commenter and Composer with 5-block cap + gallery split
-4. Add Meme Template creation and editing flow
-5. Wire mock APIs (`/comments/quick`, `/posts/:id/split`, `/gallery/:groupId`)
-6. Add unit tests for new flows and one Detox golden path
-
-## Development Notes
-
-- **Node Version**: Requires Node.js >= 20.0.0
-- **Package Manager**: Must use pnpm >= 9.0.0 (don't use npm or yarn)
-- **Monorepo management**: PNPM workspaces + Turborepo
-- **Mock mode**: Toggleable with env vars (`USE_MOCK_DATA=true`)
-- **Testing**: Jest for unit, Detox for mobile E2E, Playwright for web E2E (to be added)
-- **Performance**: FlatList/FlashList for feeds, expo-image caching, poster-first video loading
-- **Module Resolution**: Use package names (`@umemee/*`) not relative paths for cross-package imports
-- **Build Order**: Turborepo handles automatically, but be aware of dependency hierarchy
-- **Desktop Platform**: Currently disabled, migrating from Electron to Tauri
-- **Documentation**: Every directory must have a [BRIEF.md](BRIEF.md) file
-
-## Metrics
-
-Development progress is measured by:
-- Lines of functional code delivered
-- Components completed
-- API endpoints implemented
-- Platform builds passing
-- Risk complexity scores per feature
-
-## Contributing
-
-At this stage, the project is still stabilizing its design and core flows.
-Contributions should focus on **incremental features that align with the MVP scope** above.
+- [Subtree Usage Guide](SUBTREE_USAGE.md)
+- [Quick Start Guide](QUICK_START.md)
+- [Documentation](docs/README.md)
 
 ## License
 
-Private - All rights reserved
+See repository LICENSE file.
+

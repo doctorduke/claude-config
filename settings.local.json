@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dir:*)",
+      "Bash(chmod:*)",
+      "Bash(bash scripts/test-connectivity.sh:*)",
+      "Bash(bash:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(./ai-review.sh:*)",
+      "Bash(./ai-agent.sh:*)",
+      "Bash(./ai-autofix.sh:*)",
+      "Bash(awk:*)",
+      "Bash(\"./scripts/test-workflow-locally.sh\" --help)",
+      "Bash(\"./scripts/validate-ai-scripts.sh\" --help)",
+      "Bash(\"./scripts/lint-workflows.sh\" --help)",
+      "Bash(gh:*)",
+      "Bash(gh auth:*)",
+      "Bash(cat:*)",
+      "Bash(git config:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(for file in agents/rust-master.md agents/typescript-pro.md agents/performance-architect.md agents/database-optimization-master.md agents/frontend-developer.md agents/security-architect.md agents/ai-systems-architect.md; do echo \"=== Checking $file ===\"; done)",
+      "Bash(for file in mlops-engineer.md data-scientist.md test-automator.md debugger.md error-detective.md api-documenter.md payment-integration.md incident-responder.md database-admin.md search-specialist.md graphql-architect.md architect-review.md; do cp \"$file\" \"$file.bak\"; done)",
+      "Bash(for file in business-analyst content-marketer sales-automator customer-support legal-advisor quant-analyst risk-manager legacy-modernizer context-manager code-reviewer ui-ux-designer mobile-developer unity-developer minecraft-bukkit-pro ios-developer github-pro typescript-pro; do [ -f \"agents/$file.md\" ]; done)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,9 +1,0 @@
-[
-  {"name":"playwright","json":{"type":"stdio","command":"npx","args":["-y","@playwright/mcp@latest"]}},
-  {"name":"eslint","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-eslint","/Users/doctorduke/Developer/doctorduke/umemee-v0"]}},
-  {"name":"typescript","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-typescript","/Users/doctorduke/Developer/doctorduke/umemee-v0"]}},
-  {"name":"sqlite","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-sqlite"],"env":{"SQLITE_DB_PATH":"/Users/doctorduke/Developer/doctorduke/umemee-v0/data/local.sqlite"}}},
-  {"name":"filesystem","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/Users/doctorduke/Developer/doctorduke/umemee-v0"]}},
-  {"name":"memory","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-memory"]}},
-  {"name":"github","json":{"type":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-github"],\n      "env": { "GITHUB_TOKEN": "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" }}}
-]
