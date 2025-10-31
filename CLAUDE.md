@@ -185,7 +185,6 @@ pnpm setup:mcps
 
 - **Node Version**: Requires Node.js >= 20.0.0 (uses latest features)
 - **Package Manager**: Must use pnpm >= 9.0.0 (don't use npm or yarn)
-- **Husky Hooks**: Pre-commit hooks are installed automatically
 - **TypeScript**: Strict mode enabled across all packages
 - **Module Resolution**: Use package names (`@umemee/*`) not relative paths for cross-package imports
 - **Build Order**: Turborepo handles automatically, but be aware of dependency order
