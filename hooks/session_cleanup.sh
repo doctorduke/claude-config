@@ -6,8 +6,9 @@ set -euo pipefail
 HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$HOOK_DIR")"
 
-# Clean up old logs (keep last 7 days)
-find "$PROJECT_DIR/logs" -type f -name "*.log" -mtime +7 -delete || true
+# Clean up old logs
+"$HOOK_DIR/cleanup_logs.sh"
+
 
 # Report session statistics if available
 if [[ -f "$PROJECT_DIR/cache/current_session" ]]; then
