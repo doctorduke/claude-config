@@ -67,4 +67,4 @@ Optional clarifications (non-binding): Teams may define a naming convention for 
 Metrics and Planning
 - We never use time as a metric. We use output and progress to project how long a task will take.
 
-You should ajust your plan to proceed with the next sprint/phase/wave while reviewing and addressing on code reviews on open PRs from previous sprints/phasess/waves in parallel.
+You should adjust your plan to proceed with the next sprint/phase/wave while reviewing and addressing on code reviews on open PRs from previous sprints/phasess/waves in parallel.
