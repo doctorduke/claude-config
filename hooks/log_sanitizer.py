@@ -168,22 +168,21 @@ def mask_secrets(s: str) -> str:
 def detect_tool_family(tool: str, cmd: str, text: str) -> str:
     t = (tool or "").lower()
     c = (cmd or "").lower()
-    if any(x in c for x in [" npm ", " npm\n", "npm ", "npm run", "npm ci", "npm install"]) or "npm" == t:
+    if "npm" == t or re.search(r"\bnpm\b", c):
         return "npm"
-    if any(x in c for x in [" node ", "node "]) or t in ("node",):
+    if t == "node" or re.search(r"\bnode\b", c):
         return "node"
-    if "tsc" in c or t in ("tsc", "typescript") or TS_ERROR_RE.search(text):
+    if t in ("tsc", "typescript") or re.search(r"\btsc\b", c) or TS_ERROR_RE.search(text):
         return "tsc"
-    if "jest" in c or JEST_FAIL_RE.search(text):
+    if "jest" == t or re.search(r"\bjest\b", c) or JEST_FAIL_RE.search(text):
         return "jest"
-    if "eslint" in c or re.search(r"\beslint\b", text):
+    if "eslint" == t or re.search(r"\beslint\b", c) or re.search(r"\beslint\b", text):
         return "eslint"
-    if "pytest" in c or re.search(r"^FAILED ", text, flags=re.M):
+    if "pytest" == t or re.search(r"\bpytest\b", c) or re.search(r"^FAILED ", text, flags=re.M):
         return "pytest"
-    if "python" in c or PY_TRACE_START_RE.search(text):
+    if "python" == t or re.search(r"\bpython\b", c) or PY_TRACE_START_RE.search(text):
         return "python"
     return "generic"
-
 
 def parse_node_stack(lines, workspace: str) -> Dict[str, Any]:
     frames = []
