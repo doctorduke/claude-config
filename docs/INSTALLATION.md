@@ -29,7 +29,7 @@ chmod +x .claude/lib/core/*.sh
 3. Select `+ Add new matcher...`
 4. Type: `Bash`
 5. Select `+ Add new hook...`
-6. Enter: `$CLAUDE_PROJECT_DIR/.claude/hooks/sanitize_bash_output.sh`
+6. Enter: `$CLAUDE_PROJECT_DIR/.claude/hooks/log_sanitizer.py`
 7. Select storage location: `Project settings`
 8. Press Esc to save
 
@@ -51,7 +51,7 @@ Edit `.claude/settings.json` in your project:
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/sanitize_bash_output.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/log_sanitizer.py"
           }
         ]
       }

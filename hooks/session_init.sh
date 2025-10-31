@@ -17,7 +17,7 @@ echo "$SESSION_ID" > "$PROJECT_DIR/cache/current_session"
 # Initialize statistics
 cat > "$CACHE_DIR/stats.json" << 'EOFJSON'
 {
-  "session_start": "'"$(date -Iseconds)"'",
+  "session_start": "'"$(date +%Y-%m-%dT%H:%M:%S%z)"'",
   "commands_processed": 0,
   "tokens_saved": 0,
   "original_tokens": 0

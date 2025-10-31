@@ -52,7 +52,7 @@ This repository contains 79 specialized subagents that extend Claude Code's capa
 - **[gameplay-architect](gameplay-architect.md)** - Gameplay systems including game mechanics, progression, and player psychology
 - **[mobile-developer](mobile-developer.md)** - Develop React Native or Flutter apps with native integrations
 - **[graphql-architect](graphql-architect.md)** - Design GraphQL schemas, resolvers, and federation
-- **[architect-reviewer](architect-review.md)** - Reviews code changes for architectural consistency and patterns
+- **[architect-reviewer](architect-reviewer.md)** - Reviews code changes for architectural consistency and patterns
 
 ### Language Specialists
 - **[python-pro](python-pro.md)** - Write idiomatic Python code with advanced features and optimizations

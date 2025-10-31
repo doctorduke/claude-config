@@ -107,7 +107,7 @@ def trim_long_lines(lines, max_len=500):
     out = []
     for ln in lines:
         if len(ln) > max_len:
-            out.append(ln[:max_len] + " â€¦ [truncated]")
+            out.append(ln[:max_len] + " … [truncated]")
         else:
             out.append(ln)
     return out
@@ -287,7 +287,7 @@ def extract_jest(text: str) -> Dict[str, Any]:
             reason = None
             while j < n and (lines[j].strip() != "" or (j < n and not lines[j].startswith("PASS "))):
                 block.append(lines[j])
-                if lines[j].lstrip().startswith("â— ") and not reason:
+                if lines[j].lstrip().startswith("● ") and not reason:
                     reason = lines[j].strip()
                 j += 1
             errors.append({
