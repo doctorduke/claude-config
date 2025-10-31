@@ -783,5 +783,47 @@ When applied consistently, this methodology creates documentation that developer
 
 ---
 
+## Quick Search Patterns
+
+Use these grep patterns to navigate philosophical concepts:
+
+```bash
+# Find conceptual topics
+grep "^## " PHILOSOPHY.md                        # List major topics
+grep "^### Why" PHILOSOPHY.md                    # Find rationale sections
+grep "Pitfall [0-9]:" PHILOSOPHY.md             # Find common pitfalls
+
+# Find methodology
+grep "Interface-First" PHILOSOPHY.md            # Find interface-first mentions
+grep "Agent.*Parsable" PHILOSOPHY.md           # Find agent-related content
+grep "Truth Hierarchy" PHILOSOPHY.md           # Find truth hierarchy discussions
+
+# Find practical guidance
+grep "^**When" PHILOSOPHY.md                   # Find "When to..." guidance
+grep "Fix:" PHILOSOPHY.md                      # Find solutions to problems
+grep "Symptom:" PHILOSOPHY.md                  # Find problem indicators
+```
+
+---
+
+## Common Questions
+
+**Q: What if I don't know some details?**
+A: Mark uncertain sections with `> INFERRED: <explanation>`. This signals to reviewers that human verification is needed.
+
+**Q: How do I handle submodules?**
+A: Each submodule gets its own BRIEF.md. Parent BRIEF includes Local Reference Index linking to child BRIEFs. Never re-explain submodule internals in parent.
+
+**Q: What goes in _reference/ vs BRIEF.md?**
+A: BRIEF.md = short, normative, scannable interface docs. _reference/ = deep specs, diagrams, research, detailed guides. Link from BRIEF to _reference/.
+
+**Q: How do I document legacy code?**
+A: Start with Interface Contract (analyze public APIs, exports). Infer purpose from directory name and code. Mark everything with INFERRED markers, then refine with team input.
+
+**Q: Should I document implementation details?**
+A: No. BRIEF focuses on "what" (interface, behavior, contracts), not "how" (implementation). Implementation details go in code comments or _reference/spec/ if needed.
+
+---
+
 *Knowledge version: 1.0.0*
 *Based on: BRIEF System v3*

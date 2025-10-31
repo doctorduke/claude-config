@@ -19,7 +19,7 @@ This document contains the core patterns, templates, and rules for creating and 
 
 ### Required Section Order
 
-BRIEF.md must use this exact section order for consistency and agent parsing:
+BRIEF.md must use this exact section order for consistency and agent parsing (see SPECIFICATION.md for complete field requirements):
 
 ```markdown
 # <Module Name> — BRIEF
@@ -161,7 +161,7 @@ truth_hierarchy: ["source", "tests", "docs", "issues", "chat"]
 
 ### Validation Checklist
 
-Use this checklist when validating BRIEF.md files:
+Use this checklist when validating BRIEF.md files (see SPECIFICATION.md for complete validation rules):
 
 **Tier-1 Blockers** (must fix immediately):
 - [ ] BRIEF.md file exists
@@ -220,7 +220,7 @@ Common mistakes:
 
 ## State Machine Pattern
 
-BRIEFs progress through a lifecycle:
+BRIEFs progress through a lifecycle (see SPECIFICATION.md for complete state definitions):
 
 ```
 [missing] → [scaffolded] → [draft-inferred] → [confirmed] → [stale]
@@ -472,7 +472,7 @@ Manages offline article caching for the Reader module. Handles cache writes, rea
 
 ## Answer Pack Pattern
 
-Structured YAML data for agent parsing.
+Structured YAML data for agent parsing (see SPECIFICATION.md for complete field reference).
 
 ### Complete Template
 
@@ -663,5 +663,27 @@ Use relative paths so links work in:
 
 ---
 
+## Quick Search Patterns
+
+Use these grep patterns to find specific content quickly:
+
+```bash
+# Find specific patterns in this file
+grep "^## .* Pattern$" PATTERNS.md                # List all patterns
+grep "^### Pattern Structure" PATTERNS.md         # Find pattern templates
+grep "DO\|DON'T" PATTERNS.md                     # Find do/don't lists
+grep "Tips:\|Rules:" PATTERNS.md                  # Find tips and rules
+grep "^**When" PATTERNS.md                        # Find "When to..." guidance
+
+# Cross-reference with SPECIFICATION.md
+grep "see SPECIFICATION.md" PATTERNS.md           # Find spec links
+grep "Interface Contract" PATTERNS.md             # Find interface patterns
+grep "validation" PATTERNS.md                     # Find validation patterns
+```
+
+---
+
 *Patterns version: 1.0.0*
 *Based on: BRIEF System v3*
+*See SPECIFICATION.md for authoritative field definitions*
+*See PHILOSOPHY.md for interface-first methodology*

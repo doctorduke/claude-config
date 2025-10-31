@@ -752,6 +752,28 @@ grep "INFERRED:" BRIEF.md | grep -q "^## Interface Contract" && echo "INFERRED i
 
 ---
 
+## Quick Search Patterns
+
+Use these grep patterns to navigate this specification:
+
+```bash
+# Find specific section requirements
+grep "^### [0-9]\." SPECIFICATION.md              # List all numbered sections
+grep "^## .* Specification$" SPECIFICATION.md      # Find specification sections
+grep "Required.*:" SPECIFICATION.md                # Find required fields
+grep "^**.*Format.*:" SPECIFICATION.md            # Find format specifications
+
+# Find validation rules
+grep "Tier-[12]" SPECIFICATION.md                 # Find validation tiers
+grep "errors\|warnings" SPECIFICATION.md          # Find validation types
+
+# Find field definitions
+grep "^| \`.*\` |" SPECIFICATION.md              # Find field reference table entries
+grep "Must be\|Must have" SPECIFICATION.md        # Find requirements
+```
+
+---
+
 *Reference version: 1.0.0*
 *Based on: BRIEF System v3*
 *Canonical source: This document is authoritative for BRIEF v3*
