@@ -1,0 +1,28 @@
+# Backup files
+*.backup
+*.bak
+*.tmp
+*~
+
+# Logs
+*.log
+logs/
+audit/
+
+# Temporary files
+.secrets/
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor-specific
+.vscode/
+.idea/
+*.iml
+
+# Environment
+.env
+.env.local

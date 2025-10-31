@@ -1,0 +1,63 @@
+[Unit]
+Description=GitHub Actions Runner Token Auto-Refresh Service
+Documentation=https://github.com/doctorduke/github-act/blob/main/docs/runner-token-refresh.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=runner
+Group=runner
+WorkingDirectory=/home/runner/actions-runner
+
+# Environment configuration
+# IMPORTANT: Customize these environment variables for your installation
+# Set RUNNER_ORG to your GitHub organization name
+# Set RUNNER_NAME, RUNNER_DIR, and LOG_FILE according to your setup
+# Alternatively, use EnvironmentFile=/etc/github-runner/token-refresh.env
+Environment="RUNNER_ORG=your-org"
+Environment="RUNNER_NAME=%H"
+Environment="RUNNER_URL=https://github.com/your-org"
+Environment="RUNNER_DIR=/home/runner/actions-runner"
+Environment="REFRESH_THRESHOLD=300"
+Environment="CHECK_INTERVAL=60"
+Environment="MAX_RETRY_ATTEMPTS=3"
+Environment="RETRY_BACKOFF_SECONDS=30"
+Environment="LOG_FILE=/var/log/github-runner-token-refresh.log"
+Environment="METRICS_FILE=/var/tmp/runner-token-metrics.json"
+
+# Alternatively, use EnvironmentFile for configuration
+# EnvironmentFile=/etc/github-runner/token-refresh.env
+
+# Script execution
+ExecStart=/home/runner/scripts/runner-token-refresh.sh --daemon
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+StartLimitBurst=5
+
+# Security hardening
+# NoNewPrivileges=true
+# PrivateTmp=true
+# ProtectSystem=strict
+# ProtectHome=read-only
+# ReadWritePaths=/var/log /var/tmp /home/runner/actions-runner
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=github-runner-token-refresh
+
+# Resource limits (optional)
+# CPUQuota=10%
+# MemoryLimit=128M
+
+# Graceful shutdown
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

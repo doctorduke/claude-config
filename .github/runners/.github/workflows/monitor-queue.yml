@@ -1,0 +1,203 @@
+name: Monitor Queue Depth
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+
+  workflow_dispatch:
+    inputs:
+      format:
+        description: 'Output format'
+        required: false
+        default: 'json'
+        type: choice
+        options:
+          - json
+          - text
+          - prometheus
+          - csv
+      enable_alerts:
+        description: 'Enable alerting'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  monitor:
+    name: Monitor Queue and Runner Metrics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Make script executable
+        run: chmod +x scripts/monitor-queue-depth.sh
+
+      - name: Check queue depth
+        id: monitor
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEUE_DEPTH_WARNING: 5
+          QUEUE_DEPTH_CRITICAL: 10
+          UTILIZATION_WARNING: 80
+          UTILIZATION_CRITICAL: 95
+          WAIT_TIME_WARNING: 300
+          WAIT_TIME_CRITICAL: 600
+        run: |
+          # Run monitoring script
+          format="${{ inputs.format || 'json' }}"
+          alerts=""
+          if [[ "${{ inputs.enable_alerts }}" == "true" ]]; then
+            alerts="--alerts"
+          fi
+
+          mkdir -p metrics
+
+          bash scripts/monitor-queue-depth.sh \
+            --format "$format" \
+            --output "metrics/queue-metrics.$format" \
+            $alerts
+
+          # Also generate JSON for summary
+          bash scripts/monitor-queue-depth.sh \
+            --format json \
+            --output metrics/queue-metrics.json
+
+          # Extract key metrics for job summary
+          queue_depth=$(jq -r '.metrics.queue_depth' metrics/queue-metrics.json)
+          utilization=$(jq -r '.metrics.utilization_percent' metrics/queue-metrics.json)
+          status=$(jq -r '.status' metrics/queue-metrics.json)
+
+          echo "queue_depth=$queue_depth" >> $GITHUB_OUTPUT
+          echo "utilization=$utilization" >> $GITHUB_OUTPUT
+          echo "status=$status" >> $GITHUB_OUTPUT
+
+      - name: Generate job summary
+        run: |
+          metrics_file="metrics/queue-metrics.json"
+
+          # Extract metrics
+          pending=$(jq -r '.workflows.pending' $metrics_file)
+          in_progress=$(jq -r '.workflows.in_progress' $metrics_file)
+          available=$(jq -r '.runners.available' $metrics_file)
+          busy=$(jq -r '.runners.busy' $metrics_file)
+          offline=$(jq -r '.runners.offline' $metrics_file)
+          total=$(jq -r '.runners.total' $metrics_file)
+          queue_depth=$(jq -r '.metrics.queue_depth' $metrics_file)
+          utilization=$(jq -r '.metrics.utilization_percent' $metrics_file)
+          max_wait=$(jq -r '.metrics.max_wait_time_seconds' $metrics_file)
+          avg_wait=$(jq -r '.metrics.avg_wait_time_seconds' $metrics_file)
+          status=$(jq -r '.status' $metrics_file)
+
+          # Status emoji
+          status_emoji="✅"
+          if [[ "$status" == "warning" ]]; then
+            status_emoji="⚠️"
+          elif [[ "$status" == "critical" ]]; then
+            status_emoji="🚨"
+          fi
+
+          # Create summary
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # GitHub Actions Queue Monitor $status_emoji
+
+          **Repository:** \`${{ github.repository }}\`
+          **Status:** **${status^^}**
+          **Timestamp:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ## Workflows
+
+          | Metric | Value |
+          |--------|-------|
+          | Pending | $pending |
+          | In Progress | $in_progress |
+          | Total Active | $((pending + in_progress)) |
+
+          ## Runners
+
+          | Metric | Value |
+          |--------|-------|
+          | Total | $total |
+          | Available | $available |
+          | Busy | $busy |
+          | Offline | $offline |
+
+          ## Performance Metrics
+
+          | Metric | Value | Threshold |
+          |--------|-------|-----------|
+          | Queue Depth | $queue_depth | Warning: 5, Critical: 10 |
+          | Utilization | ${utilization}% | Warning: 80%, Critical: 95% |
+          | Max Wait Time | ${max_wait}s ($((max_wait / 60))m) | Warning: 5m, Critical: 10m |
+          | Avg Wait Time | ${avg_wait}s ($((avg_wait / 60))m) | - |
+
+          ## Utilization Chart
+
+          \`\`\`
+          EOF
+
+          # Add ASCII chart
+          printf "  [" >> $GITHUB_STEP_SUMMARY
+          bar_length=$((utilization / 2))
+          for ((i=1; i<=50; i++)); do
+            if [[ $i -le $bar_length ]]; then
+              printf "#" >> $GITHUB_STEP_SUMMARY
+            else
+              printf " " >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          printf "] %d%%\n" $utilization >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          # Add recommendations if needed
+          if [[ "$status" != "healthy" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Recommendations" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [[ $queue_depth -ge 5 ]]; then
+              echo "- ⚠️ Queue depth is high ($queue_depth). Consider adding more runners." >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [[ $utilization -ge 80 ]]; then
+              echo "- ⚠️ Runner utilization is high (${utilization}%). Capacity may be insufficient." >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [[ $max_wait -ge 300 ]]; then
+              echo "- ⚠️ Workflows are waiting ${max_wait}s ($((max_wait / 60))m). Check runner availability." >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [[ $offline -gt 0 ]]; then
+              echo "- ⚠️ $offline runner(s) are offline. Investigate connectivity issues." >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [[ $available -eq 0 && $pending -gt 0 ]]; then
+              echo "- 🚨 No runners available but $pending workflow(s) pending. Immediate action required!" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: queue-metrics-${{ github.run_number }}
+          path: metrics/
+          retention-days: 30
+
+      - name: Check status and fail if critical
+        if: steps.monitor.outputs.status == 'critical'
+        run: |
+          echo "::error::Queue monitoring detected critical status"
+          echo "Queue Depth: ${{ steps.monitor.outputs.queue_depth }}"
+          echo "Utilization: ${{ steps.monitor.outputs.utilization }}%"
+          exit 1

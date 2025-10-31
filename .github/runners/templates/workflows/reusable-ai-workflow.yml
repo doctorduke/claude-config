@@ -1,0 +1,281 @@
+name: Reusable AI Workflow
+
+on:
+  workflow_call:
+    inputs:
+      ai-task:
+        description: 'AI task to perform (review, respond, fix, explain)'
+        required: true
+        type: string
+      context-type:
+        description: 'Context type (pr, issue, commit)'
+        required: true
+        type: string
+      context-id:
+        description: 'PR number, issue number, or commit SHA'
+        required: true
+        type: string
+      ai-model:
+        description: 'AI model to use'
+        required: false
+        type: string
+        default: 'gpt-4'
+      ai-provider:
+        description: 'AI provider (openai, anthropic, azure-openai)'
+        required: false
+        type: string
+        default: 'openai'
+      ai-temperature:
+        description: 'AI temperature (0.0-1.0)'
+        required: false
+        type: string
+        default: '0.3'
+      sparse-checkout:
+        description: 'Enable sparse checkout'
+        required: false
+        type: boolean
+        default: true
+      timeout-minutes:
+        description: 'Workflow timeout in minutes'
+        required: false
+        type: number
+        default: 15
+
+    secrets:
+      ai-api-key:
+        description: 'AI API key'
+        required: true
+      ai-agent-pat:
+        description: 'PAT for protected branch operations'
+        required: false
+
+    outputs:
+      task-completed:
+        description: 'Whether task completed successfully'
+        value: ${{ jobs.ai-task.outputs.completed }}
+      result-summary:
+        description: 'Summary of task execution'
+        value: ${{ jobs.ai-task.outputs.summary }}
+      error-message:
+        description: 'Error message if task failed'
+        value: ${{ jobs.ai-task.outputs.error }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  ai-task:
+    name: Execute AI Task
+    runs-on: [self-hosted, linux, ai-agent]
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+
+    outputs:
+      completed: ${{ steps.execute.outputs.completed }}
+      summary: ${{ steps.execute.outputs.summary }}
+      error: ${{ steps.execute.outputs.error }}
+
+    steps:
+      - name: Validate Inputs
+        id: validate
+        run: |
+          echo "✔️ Validating inputs..."
+
+          # Validate ai-task
+          case "${{ inputs.ai-task }}" in
+            review|respond|fix|explain)
+              echo "✅ Valid task: ${{ inputs.ai-task }}"
+              ;;
+            *)
+              echo "❌ Invalid task: ${{ inputs.ai-task }}"
+              echo "Valid tasks: review, respond, fix, explain"
+              exit 1
+              ;;
+          esac
+
+          # Validate context-type
+          case "${{ inputs.context-type }}" in
+            pr|issue|commit)
+              echo "✅ Valid context: ${{ inputs.context-type }}"
+              ;;
+            *)
+              echo "❌ Invalid context: ${{ inputs.context-type }}"
+              exit 1
+              ;;
+          esac
+
+          echo "✅ Input validation passed"
+
+      - name: Setup AI Agent Environment
+        uses: ./.github/actions/setup-ai-agent
+        with:
+          sparse-checkout: ${{ inputs.sparse-checkout }}
+          checkout-paths: |
+            .github/
+            src/
+            lib/
+
+      - name: Fetch Context
+        id: context
+        run: |
+          echo "📥 Fetching ${{ inputs.context-type }} context..."
+
+          CONTEXT_TYPE="${{ inputs.context-type }}"
+          CONTEXT_ID="${{ inputs.context-id }}"
+
+          case $CONTEXT_TYPE in
+            pr)
+              gh pr view "$CONTEXT_ID" \
+                --json number,title,body,state,author,additions,deletions,changedFiles,files \
+                > context.json
+              ;;
+            issue)
+              gh issue view "$CONTEXT_ID" \
+                --json number,title,body,state,author,labels,comments \
+                > context.json
+              ;;
+            commit)
+              gh api "/repos/$GITHUB_REPOSITORY/commits/$CONTEXT_ID" \
+                > context.json
+              ;;
+          esac
+
+          echo "✅ Context fetched"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build AI Request
+        id: build-request
+        run: |
+          echo "🔨 Building AI request..."
+
+          jq -n \
+            --arg task "${{ inputs.ai-task }}" \
+            --arg context_type "${{ inputs.context-type }}" \
+            --argjson context "$(cat context.json)" \
+            --arg model "${{ inputs.ai-model }}" \
+            --arg provider "${{ inputs.ai-provider }}" \
+            --argjson temperature "${{ inputs.ai-temperature }}" \
+            '{
+              task: $task,
+              context: {
+                type: $context_type,
+                data: $context,
+                repository: $ENV.GITHUB_REPOSITORY
+              },
+              config: {
+                provider: $provider,
+                model: $model,
+                temperature: $temperature,
+                max_tokens: 2000
+              }
+            }' > ai-request.json
+
+          echo "✅ Request built"
+
+      - name: Execute AI Task
+        id: execute
+        run: |
+          echo "🤖 Executing AI task: ${{ inputs.ai-task }}..."
+
+          # Call task dispatcher script
+          bash .github/scripts/ai-task-dispatcher.sh \
+            --task "${{ inputs.ai-task }}" \
+            --context-type "${{ inputs.context-type }}" \
+            --context-id "${{ inputs.context-id }}" \
+            --request-file ai-request.json \
+            --output-file ai-response.json
+
+          # Extract results
+          if [ -f ai-response.json ]; then
+            STATUS=$(jq -r '.status' ai-response.json)
+
+            if [ "$STATUS" == "success" ]; then
+              echo "completed=true" >> $GITHUB_OUTPUT
+
+              SUMMARY=$(jq -r '.result.summary // "Task completed successfully"' ai-response.json)
+              echo "summary=$SUMMARY" >> $GITHUB_OUTPUT
+
+              echo "✅ Task completed successfully"
+            else
+              echo "completed=false" >> $GITHUB_OUTPUT
+              ERROR=$(jq -r '.error.message // "Unknown error"' ai-response.json)
+              echo "error=$ERROR" >> $GITHUB_OUTPUT
+              echo "❌ Task failed: $ERROR"
+              exit 1
+            fi
+          else
+            echo "completed=false" >> $GITHUB_OUTPUT
+            echo "error=No response file generated" >> $GITHUB_OUTPUT
+            echo "❌ No response generated"
+            exit 1
+          fi
+        env:
+          AI_API_KEY: ${{ secrets.ai-api-key }}
+          AI_AGENT_PAT: ${{ secrets.ai-agent-pat }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post Results
+        if: steps.execute.outputs.completed == 'true'
+        run: |
+          echo "📤 Posting results..."
+
+          CONTEXT_TYPE="${{ inputs.context-type }}"
+          CONTEXT_ID="${{ inputs.context-id }}"
+
+          # Format results based on context type
+          case $CONTEXT_TYPE in
+            pr)
+              if [ -f review-comment.md ]; then
+                gh pr comment "$CONTEXT_ID" --body "$(cat review-comment.md)"
+              fi
+              ;;
+            issue)
+              if [ -f response-comment.md ]; then
+                gh issue comment "$CONTEXT_ID" --body "$(cat response-comment.md)"
+              fi
+              ;;
+          esac
+
+          echo "✅ Results posted"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ai-task-artifacts-${{ inputs.ai-task }}-${{ inputs.context-id }}
+          path: |
+            context.json
+            ai-request.json
+            ai-response.json
+            review-comment.md
+            response-comment.md
+          retention-days: 30
+        continue-on-error: true
+
+      - name: Record Metrics
+        if: always()
+        run: |
+          echo "📊 Recording metrics..."
+
+          cat > task-metrics.json <<EOF
+          {
+            "task": "${{ inputs.ai-task }}",
+            "context_type": "${{ inputs.context-type }}",
+            "context_id": "${{ inputs.context-id }}",
+            "ai_model": "${{ inputs.ai-model }}",
+            "ai_provider": "${{ inputs.ai-provider }}",
+            "completed": ${{ steps.execute.outputs.completed || false }},
+            "duration_seconds": ${{ github.job.duration || 0 }},
+            "timestamp": "$(date -Iseconds)",
+            "repository": "${{ github.repository }}",
+            "workflow_run_id": "${{ github.run_id }}"
+          }
+          EOF
+
+          echo "✅ Metrics recorded"
+        continue-on-error: true

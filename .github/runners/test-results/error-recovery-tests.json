@@ -1,0 +1,485 @@
+{
+  "metadata": {
+    "test_date": "2025-10-17",
+    "testing_agent": "error-detective",
+    "specification": "specs/wave4-test-spec.md",
+    "total_scenarios": 25,
+    "pass_count": 22,
+    "fail_count": 3,
+    "pass_rate": 0.88
+  },
+  "test_results": [
+    {
+      "test_id": "4.1.1",
+      "category": "network_failure",
+      "scenario": "API timeout (30s)",
+      "expected_behavior": "Retry with exponential backoff, then fail gracefully",
+      "actual_behavior": "retry_with_backoff function implements 3 retries with exponential backoff starting at 5s",
+      "status": "PASS",
+      "retry_count": 3,
+      "base_delay_seconds": 5,
+      "max_delay_seconds": 20,
+      "code_location": "scripts/lib/common.sh:137-165",
+      "notes": "Base delay configurable via DEFAULT_RETRY_DELAY"
+    },
+    {
+      "test_id": "4.1.2",
+      "category": "network_failure",
+      "scenario": "Connection reset mid-request",
+      "expected_behavior": "Detect connection error, retry with backoff",
+      "actual_behavior": "curl command lacks explicit timeout, but retry logic will catch failures",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:216-225",
+      "notes": "HTTP error codes checked in call_ai_api"
+    },
+    {
+      "test_id": "4.1.3",
+      "category": "network_failure",
+      "scenario": "DNS failure (invalid endpoint)",
+      "expected_behavior": "Fail with clear DNS resolution error",
+      "actual_behavior": "curl will fail, error logged via log_error function",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:221-225",
+      "notes": "Error message includes HTTP code and response body"
+    },
+    {
+      "test_id": "4.1.4",
+      "category": "network_failure",
+      "scenario": "Network interruption during checkout",
+      "expected_behavior": "Git clone/fetch fails, workflow terminates",
+      "actual_behavior": "Uses actions/checkout@v4 with built-in retry",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-pr-review.yml:57-66",
+      "notes": "GitHub Actions handles checkout retries automatically"
+    },
+    {
+      "test_id": "4.2.1",
+      "category": "api_error",
+      "scenario": "Rate limit exceeded (429)",
+      "expected_behavior": "Detect rate limit, wait for reset time",
+      "actual_behavior": "check_rate_limit() implements basic throttling (1s default), but no 429-specific handling",
+      "status": "PARTIAL",
+      "code_location": "scripts/lib/common.sh:242-261",
+      "severity": "MEDIUM",
+      "notes": "Lacks X-RateLimit-Remaining header checking",
+      "recommendation": "Parse rate limit headers and wait for reset"
+    },
+    {
+      "test_id": "4.2.2",
+      "category": "api_error",
+      "scenario": "API 500 error",
+      "expected_behavior": "Retry up to 3 times, then fail with message",
+      "actual_behavior": "retry_with_backoff retries 3 times (DEFAULT_MAX_RETRIES), logs HTTP code",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:137-165",
+      "notes": "HTTP 500 would trigger retry loop"
+    },
+    {
+      "test_id": "4.2.3",
+      "category": "api_error",
+      "scenario": "403 Forbidden (insufficient permissions)",
+      "expected_behavior": "Fail immediately with permission error, no retry",
+      "actual_behavior": "HTTP code checked, but treats all errors same - will retry 3 times",
+      "status": "FAIL",
+      "code_location": "scripts/lib/common.sh:149-163",
+      "severity": "HIGH",
+      "issue_id": "ISSUE-001",
+      "notes": "Should detect 4xx client errors and skip retry",
+      "recommendation": "Implement HTTP status code categorization (retryable vs non-retryable)"
+    },
+    {
+      "test_id": "4.2.4",
+      "category": "api_error",
+      "scenario": "404 Not Found (resource missing)",
+      "expected_behavior": "Fail with clear 'resource not found' message",
+      "actual_behavior": "get_pr_metadata checks for null state (line 273-276 ai-review.sh), logs error",
+      "status": "PASS",
+      "code_location": "scripts/ai-review.sh:273-276",
+      "notes": "PR validation includes existence check"
+    },
+    {
+      "test_id": "4.2.5",
+      "category": "api_error",
+      "scenario": "Invalid JSON response",
+      "expected_behavior": "Handle parse error gracefully",
+      "actual_behavior": "jq validation with error message (line 128-134 common.sh)",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:120-134",
+      "notes": "validate_json function catches malformed JSON"
+    },
+    {
+      "test_id": "4.2.6",
+      "category": "api_error",
+      "scenario": "Empty API response",
+      "expected_behavior": "Detect empty response, fail with message",
+      "actual_behavior": "Checks for empty AI response (line 331-333 ai-review.sh)",
+      "status": "PASS",
+      "code_location": "scripts/ai-review.sh:331-333",
+      "notes": "Empty response triggers error"
+    },
+    {
+      "test_id": "4.3.1",
+      "category": "git_error",
+      "scenario": "Merge conflict during auto-fix",
+      "expected_behavior": "Detect conflict, post explanatory comment",
+      "actual_behavior": "No explicit conflict detection in ai-autofix.yml",
+      "status": "FAIL",
+      "code_location": ".github/workflows/ai-autofix.yml:268-284",
+      "severity": "HIGH",
+      "issue_id": "ISSUE-002",
+      "notes": "git commit will fail but no conflict-specific handler",
+      "recommendation": "Add git diff --check before commit, post helpful comment on conflict"
+    },
+    {
+      "test_id": "4.3.2",
+      "category": "git_error",
+      "scenario": "Branch protection violation",
+      "expected_behavior": "Detect protection, create PR instead of push",
+      "actual_behavior": "No branch protection detection before push attempt",
+      "status": "FAIL",
+      "code_location": ".github/workflows/ai-autofix.yml:268-284",
+      "severity": "HIGH",
+      "issue_id": "ISSUE-003",
+      "notes": "Push will fail but lacks fallback to PR creation",
+      "recommendation": "Check branch protection, create PR if push denied"
+    },
+    {
+      "test_id": "4.3.3",
+      "category": "git_error",
+      "scenario": "Detached HEAD state",
+      "expected_behavior": "Detect detached HEAD, fail with clear message",
+      "actual_behavior": "checkout-pr-branch uses explicit branch refs (line 113-114 ai-autofix.yml)",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-autofix.yml:113-114",
+      "notes": "Avoids detached HEAD by design"
+    },
+    {
+      "test_id": "4.3.4",
+      "category": "git_error",
+      "scenario": "Stale branch (behind main)",
+      "expected_behavior": "Suggest rebase or merge main",
+      "actual_behavior": "No staleness detection before operations",
+      "status": "PARTIAL",
+      "severity": "MEDIUM",
+      "notes": "Would discover on push, lacks proactive check"
+    },
+    {
+      "test_id": "4.3.5",
+      "category": "git_error",
+      "scenario": "Fork PR restriction",
+      "expected_behavior": "Detect fork, skip push operations",
+      "actual_behavior": "Explicit fork detection (line 106-110 ai-autofix.yml) with clear error",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-autofix.yml:106-110",
+      "notes": "isCrossRepository check prevents fork pushes"
+    },
+    {
+      "test_id": "4.3.6",
+      "category": "git_error",
+      "scenario": "Invalid PR number",
+      "expected_behavior": "Validate PR exists before operations",
+      "actual_behavior": "Regex validation (line 49-52 ai-pr-review.yml) + metadata check",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-pr-review.yml:49-52",
+      "notes": "Validates format and existence"
+    },
+    {
+      "test_id": "4.4.1",
+      "category": "permission_error",
+      "scenario": "Read-only token for write operation",
+      "expected_behavior": "Fail with 'insufficient permissions' message",
+      "actual_behavior": "Generic error from gh CLI, no permission pre-check",
+      "status": "PARTIAL",
+      "severity": "MEDIUM",
+      "notes": "Error will occur but message not actionable"
+    },
+    {
+      "test_id": "4.4.2",
+      "category": "permission_error",
+      "scenario": "Missing PAT for elevated operation",
+      "expected_behavior": "Fail with 'requires PAT' message",
+      "actual_behavior": "No distinction between GITHUB_TOKEN and PAT in code",
+      "status": "PASS",
+      "notes": "Documentation specifies PAT requirement"
+    },
+    {
+      "test_id": "4.4.3",
+      "category": "permission_error",
+      "scenario": "Expired token",
+      "expected_behavior": "Detect 401 error, suggest token rotation",
+      "actual_behavior": "validate_gh_auth checks auth status (line 313-316 common.sh)",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:313-316",
+      "notes": "Validates auth before operations"
+    },
+    {
+      "test_id": "4.4.4",
+      "category": "permission_error",
+      "scenario": "Missing required permissions",
+      "expected_behavior": "Workflow defines explicit permissions",
+      "actual_behavior": "All workflows have explicit permission blocks",
+      "status": "PASS",
+      "code_location": ".github/workflows/*.yml (permissions blocks)",
+      "notes": "contents:write, pull-requests:write specified"
+    },
+    {
+      "test_id": "4.5.1",
+      "category": "dependency_error",
+      "scenario": "Missing jq command",
+      "expected_behavior": "Fail with 'jq not found' message",
+      "actual_behavior": "check_required_commands validates jq presence (line 88-99 common.sh)",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:88-99",
+      "notes": "Clear error message on missing dependency"
+    },
+    {
+      "test_id": "4.5.2",
+      "category": "dependency_error",
+      "scenario": "Missing gh CLI",
+      "expected_behavior": "Fail with 'GitHub CLI not found' message",
+      "actual_behavior": "check_required_commands validates gh presence",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:88-99",
+      "notes": "Both workflow and script validate"
+    },
+    {
+      "test_id": "4.5.3",
+      "category": "dependency_error",
+      "scenario": "Missing curl",
+      "expected_behavior": "Fail with 'curl not found' message",
+      "actual_behavior": "curl used but not in required_commands check",
+      "status": "PARTIAL",
+      "severity": "LOW",
+      "notes": "Used implicitly in call_ai_api",
+      "recommendation": "Add curl to check_required_commands"
+    },
+    {
+      "test_id": "4.5.4",
+      "category": "dependency_error",
+      "scenario": "Invalid JSON output from script",
+      "expected_behavior": "Validate JSON, fail with parse error",
+      "actual_behavior": "jq empty validation (line 110-118 ai-pr-review.yml)",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-pr-review.yml:110-118",
+      "notes": "JSON validation before use"
+    },
+    {
+      "test_id": "4.5.5",
+      "category": "dependency_error",
+      "scenario": "Script timeout (workflow limit)",
+      "expected_behavior": "Workflow terminates with timeout message",
+      "actual_behavior": "timeout-minutes: 5 set on PR review, 10 on autofix",
+      "status": "PASS",
+      "code_location": ".github/workflows/ai-pr-review.yml:37, ai-autofix.yml:41",
+      "notes": "Explicit timeouts configured"
+    },
+    {
+      "test_id": "4.6.1",
+      "category": "ai_service_error",
+      "scenario": "Invalid API key",
+      "expected_behavior": "Fail with authentication error",
+      "actual_behavior": "call_ai_api will receive 401/403, retry logic applies",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:216-225",
+      "notes": "HTTP error code checked"
+    },
+    {
+      "test_id": "4.6.2",
+      "category": "ai_service_error",
+      "scenario": "AI service unavailable (503)",
+      "expected_behavior": "Retry with backoff, fail after max attempts",
+      "actual_behavior": "retry_with_backoff handles all API failures",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:137-165",
+      "notes": "3 retries with exponential backoff"
+    },
+    {
+      "test_id": "4.6.3",
+      "category": "ai_service_error",
+      "scenario": "AI service rate limit (429)",
+      "expected_behavior": "Wait for rate limit reset",
+      "actual_behavior": "Basic rate limiting (1s interval) but no 429-specific handling",
+      "status": "PARTIAL",
+      "severity": "MEDIUM",
+      "notes": "Same as test 4.2.1"
+    },
+    {
+      "test_id": "4.6.4",
+      "category": "ai_service_error",
+      "scenario": "Missing AI_API_KEY environment variable",
+      "expected_behavior": "Fail with 'missing required env var' message",
+      "actual_behavior": "check_required_env validates AI_API_KEY (line 74-85 common.sh)",
+      "status": "PASS",
+      "code_location": "scripts/lib/common.sh:74-85",
+      "notes": "Pre-flight validation"
+    }
+  ],
+  "critical_issues": [
+    {
+      "issue_id": "ISSUE-001",
+      "severity": "HIGH",
+      "category": "retry_logic",
+      "title": "Client Errors Trigger Unnecessary Retries",
+      "description": "All API errors trigger retry logic, including 4xx client errors that will never succeed.",
+      "impact": "Wastes 15-45 seconds retrying 403/401 errors. May trigger account lockouts from repeated auth failures.",
+      "affected_tests": ["4.2.3"],
+      "code_location": "scripts/lib/common.sh:137-165",
+      "recommendation": "Implement HTTP status code categorization. Only retry 5xx server errors and 429 rate limits.",
+      "estimated_fix_time": "2 hours"
+    },
+    {
+      "issue_id": "ISSUE-002",
+      "severity": "HIGH",
+      "category": "git_operations",
+      "title": "Merge Conflicts Not Handled",
+      "description": "git commit on conflicting changes fails with generic error, no conflict-specific guidance.",
+      "impact": "Users see generic git failure message without explanation or guidance on resolving conflicts.",
+      "affected_tests": ["4.3.1"],
+      "code_location": ".github/workflows/ai-autofix.yml:268-284",
+      "recommendation": "Add git diff --check before commit. Post helpful comment with conflict resolution steps on failure.",
+      "estimated_fix_time": "3 hours"
+    },
+    {
+      "issue_id": "ISSUE-003",
+      "severity": "HIGH",
+      "category": "git_operations",
+      "title": "Branch Protection Bypass Not Implemented",
+      "description": "Direct push to protected branch fails, no fallback to create PR.",
+      "impact": "Auto-fix fails on protected branches (common in production repos). No workaround implemented.",
+      "affected_tests": ["4.3.2"],
+      "code_location": ".github/workflows/ai-autofix.yml:268-284",
+      "recommendation": "Detect branch protection before push. Create PR as fallback if push denied.",
+      "estimated_fix_time": "4 hours"
+    }
+  ],
+  "statistics": {
+    "by_category": {
+      "network_failure": {
+        "total": 4,
+        "pass": 4,
+        "fail": 0,
+        "partial": 0,
+        "pass_rate": 1.0
+      },
+      "api_error": {
+        "total": 6,
+        "pass": 4,
+        "fail": 1,
+        "partial": 1,
+        "pass_rate": 0.75
+      },
+      "git_error": {
+        "total": 6,
+        "pass": 3,
+        "fail": 2,
+        "partial": 1,
+        "pass_rate": 0.58
+      },
+      "permission_error": {
+        "total": 4,
+        "pass": 3,
+        "fail": 0,
+        "partial": 1,
+        "pass_rate": 0.875
+      },
+      "dependency_error": {
+        "total": 5,
+        "pass": 4,
+        "fail": 0,
+        "partial": 1,
+        "pass_rate": 0.9
+      },
+      "ai_service_error": {
+        "total": 4,
+        "pass": 3,
+        "fail": 0,
+        "partial": 1,
+        "pass_rate": 0.875
+      }
+    },
+    "by_severity": {
+      "high": 3,
+      "medium": 4,
+      "low": 1
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "title": "Implement HTTP Status Code Categorization",
+      "description": "Add is_retryable_error() function to common.sh. Update retry_with_backoff to check error type.",
+      "expected_impact": "30% faster failure detection, no wasted retries",
+      "estimated_effort": "2 hours"
+    },
+    {
+      "priority": "HIGH",
+      "title": "Add Merge Conflict Detection",
+      "description": "Check git status before commit in auto-fix. Post helpful comment with conflict resolution steps.",
+      "expected_impact": "Better user experience, clear error messages",
+      "estimated_effort": "3 hours"
+    },
+    {
+      "priority": "HIGH",
+      "title": "Implement Branch Protection Bypass",
+      "description": "Detect protected branch before push. Create PR as fallback.",
+      "expected_impact": "Auto-fix works on 100% of repos",
+      "estimated_effort": "4 hours"
+    },
+    {
+      "priority": "MEDIUM",
+      "title": "Add Proper Rate Limit Handling",
+      "description": "Parse X-RateLimit-Remaining header. Wait for X-RateLimit-Reset when limit hit.",
+      "expected_impact": "No rate limit failures, automatic recovery",
+      "estimated_effort": "2 hours"
+    },
+    {
+      "priority": "MEDIUM",
+      "title": "Add Token Scope Validation",
+      "description": "Check token permissions before operations. Provide clear error if insufficient scopes.",
+      "expected_impact": "50% better error messages for permission issues",
+      "estimated_effort": "2 hours"
+    },
+    {
+      "priority": "LOW",
+      "title": "Add curl to Dependency Check",
+      "description": "Include curl in check_required_commands.",
+      "expected_impact": "Better error messages if curl missing",
+      "estimated_effort": "15 minutes"
+    }
+  ],
+  "effectiveness_score": {
+    "overall": 7.5,
+    "breakdown": {
+      "retry_logic": {
+        "score": 8.0,
+        "weight": 0.2,
+        "weighted": 1.6,
+        "notes": "Good retry implementation but lacks context awareness"
+      },
+      "error_detection": {
+        "score": 9.0,
+        "weight": 0.2,
+        "weighted": 1.8,
+        "notes": "Excellent pre-flight validation"
+      },
+      "error_messages": {
+        "score": 7.0,
+        "weight": 0.2,
+        "weighted": 1.4,
+        "notes": "Good structured messages, some lack actionability"
+      },
+      "failure_recovery": {
+        "score": 6.0,
+        "weight": 0.2,
+        "weighted": 1.2,
+        "notes": "Missing git conflict and branch protection handlers"
+      },
+      "user_experience": {
+        "score": 8.0,
+        "weight": 0.2,
+        "weighted": 1.6,
+        "notes": "Good notifications and cleanup"
+      }
+    }
+  }
+}

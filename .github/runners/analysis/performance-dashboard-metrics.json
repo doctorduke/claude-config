@@ -1,0 +1,232 @@
+{
+  "dashboard_name": "GitHub Actions Self-Hosted Runner Performance",
+  "version": "1.0",
+  "refresh_interval_seconds": 300,
+  "kpis": {
+    "primary": [
+      {
+        "name": "Queue Depth",
+        "description": "Number of jobs waiting in queue",
+        "metric_path": "github.actions.queue.depth",
+        "unit": "jobs",
+        "targets": {
+          "optimal": 5,
+          "warning": 10,
+          "critical": 15
+        },
+        "visualization": "gauge",
+        "alert_threshold": 10
+      },
+      {
+        "name": "Wait Time P95",
+        "description": "95th percentile wait time from queue to start",
+        "metric_path": "github.actions.queue.wait_time_p95",
+        "unit": "seconds",
+        "targets": {
+          "optimal": 60,
+          "warning": 120,
+          "critical": 180
+        },
+        "visualization": "line_chart",
+        "alert_threshold": 120
+      },
+      {
+        "name": "Job Success Rate",
+        "description": "Percentage of jobs completing successfully",
+        "metric_path": "github.actions.jobs.success_rate",
+        "unit": "percent",
+        "targets": {
+          "optimal": 98,
+          "warning": 95,
+          "critical": 90
+        },
+        "visualization": "gauge",
+        "alert_threshold": 95
+      },
+      {
+        "name": "Runner Utilization",
+        "description": "Percentage of runners actively running jobs",
+        "metric_path": "github.actions.runners.utilization",
+        "unit": "percent",
+        "targets": {
+          "optimal_min": 60,
+          "optimal_max": 75,
+          "warning": 85,
+          "critical": 95
+        },
+        "visualization": "gauge",
+        "alert_threshold": 85
+      }
+    ],
+    "performance": [
+      {
+        "name": "Job Start Latency P95",
+        "metric_path": "github.actions.jobs.start_latency_p95",
+        "unit": "seconds",
+        "target": 60,
+        "alert_threshold": 90
+      },
+      {
+        "name": "Checkout Time P95",
+        "metric_path": "github.actions.checkout.duration_p95",
+        "unit": "seconds",
+        "target": 10,
+        "alert_threshold": 20
+      },
+      {
+        "name": "Workflow Duration P95",
+        "metric_path": "github.actions.workflow.duration_p95",
+        "unit": "seconds",
+        "target": 120,
+        "alert_threshold": 180
+      }
+    ],
+    "resource_utilization": [
+      {
+        "name": "CPU Utilization",
+        "metric_path": "system.cpu.utilization",
+        "unit": "percent",
+        "targets": {
+          "optimal_min": 40,
+          "optimal_max": 75,
+          "warning": 85,
+          "critical": 95
+        }
+      },
+      {
+        "name": "Memory Utilization",
+        "metric_path": "system.memory.utilization",
+        "unit": "percent",
+        "targets": {
+          "optimal_min": 50,
+          "optimal_max": 70,
+          "warning": 80,
+          "critical": 90
+        }
+      },
+      {
+        "name": "Disk I/O Wait",
+        "metric_path": "system.disk.io_wait",
+        "unit": "percent",
+        "target": 5,
+        "alert_threshold": 10
+      },
+      {
+        "name": "Network Throughput",
+        "metric_path": "system.network.throughput",
+        "unit": "mbps",
+        "target": 100,
+        "alert_threshold": 800
+      }
+    ],
+    "cost": [
+      {
+        "name": "Cost Per Workflow",
+        "metric_path": "github.actions.cost.per_workflow",
+        "unit": "usd",
+        "target": 0.08,
+        "alert_threshold": 0.15
+      },
+      {
+        "name": "Monthly Infrastructure Cost",
+        "metric_path": "github.actions.cost.monthly_infrastructure",
+        "unit": "usd",
+        "target": 450,
+        "alert_threshold": 700
+      }
+    ]
+  },
+  "alerts": [
+    {
+      "name": "Queue Backup",
+      "condition": "queue_depth > 10 AND wait_time_p95 > 120",
+      "severity": "warning",
+      "action": "Scale up runners by 2"
+    },
+    {
+      "name": "Critical Queue Saturation",
+      "condition": "queue_depth > 15 OR wait_time_p95 > 180",
+      "severity": "critical",
+      "action": "Immediate scale up, page on-call"
+    },
+    {
+      "name": "Low Success Rate",
+      "condition": "success_rate < 95% for 15 minutes",
+      "severity": "warning",
+      "action": "Investigate runner health"
+    },
+    {
+      "name": "Critical Success Rate",
+      "condition": "success_rate < 90% for 5 minutes",
+      "severity": "critical",
+      "action": "Page on-call, investigate immediately"
+    },
+    {
+      "name": "High CPU Utilization",
+      "condition": "cpu_utilization > 85% for 10 minutes",
+      "severity": "warning",
+      "action": "Consider scaling up"
+    },
+    {
+      "name": "Memory Pressure",
+      "condition": "memory_utilization > 85%",
+      "severity": "warning",
+      "action": "Monitor for OOM, consider adding RAM"
+    },
+    {
+      "name": "Disk I/O Saturation",
+      "condition": "io_wait > 10% for 10 minutes",
+      "severity": "warning",
+      "action": "Consider NVMe upgrade"
+    },
+    {
+      "name": "Cost Overrun",
+      "condition": "cost_per_workflow > 0.15",
+      "severity": "warning",
+      "action": "Review resource allocation"
+    }
+  ],
+  "dashboards": [
+    {
+      "name": "Overview",
+      "panels": [
+        "Queue Depth",
+        "Wait Time P95",
+        "Job Success Rate",
+        "Runner Utilization"
+      ]
+    },
+    {
+      "name": "Performance",
+      "panels": [
+        "Job Start Latency P95",
+        "Checkout Time P95",
+        "Workflow Duration P95",
+        "Performance Over Time"
+      ]
+    },
+    {
+      "name": "Resources",
+      "panels": [
+        "CPU Utilization",
+        "Memory Utilization",
+        "Disk I/O Wait",
+        "Network Throughput"
+      ]
+    },
+    {
+      "name": "Cost",
+      "panels": [
+        "Cost Per Workflow",
+        "Monthly Infrastructure Cost",
+        "Cost Trend",
+        "ROI Tracker"
+      ]
+    }
+  ],
+  "data_retention": {
+    "real_time": "24 hours",
+    "hourly_aggregates": "30 days",
+    "daily_aggregates": "1 year"
+  }
+}

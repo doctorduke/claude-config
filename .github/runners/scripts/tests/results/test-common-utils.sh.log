@@ -1,0 +1,2 @@
+=== Test Suite: Utility Functions - Environment Checks ===
+  ✓ check_required_env success

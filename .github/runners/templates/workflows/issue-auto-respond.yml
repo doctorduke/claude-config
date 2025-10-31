@@ -1,0 +1,260 @@
+name: AI Issue Auto-Respond
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to respond to'
+        required: true
+        type: number
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  AI_MODEL: gpt-4
+  AI_PROVIDER: openai
+  AI_TEMPERATURE: 0.5
+  ENABLE_AUTO_CLOSE: false
+  ENABLE_AUTO_LABEL: true
+  CHECK_DUPLICATES: true
+
+jobs:
+  auto-respond:
+    name: AI Issue Response
+    runs-on: [self-hosted, linux, ai-agent]
+    timeout-minutes: 10
+
+    # Only run if:
+    # - Issue has 'ai-assist' label, OR
+    # - Bot is mentioned in comment, OR
+    # - Manual trigger
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.labels.*.name, 'ai-assist') ||
+      contains(github.event.comment.body, '@ai-assistant')
+
+    steps:
+      - name: Setup AI Agent Environment
+        uses: ./.github/actions/setup-ai-agent
+        with:
+          sparse-checkout: 'true'
+          checkout-paths: |
+            .github/
+            docs/
+            README.md
+
+      - name: Extract Issue Context
+        id: issue-context
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+
+          echo "📥 Extracting context for issue #$ISSUE_NUMBER..."
+
+          gh issue view "$ISSUE_NUMBER" \
+            --json number,title,body,labels,comments,state,author,createdAt,updatedAt \
+            > issue-context.json
+
+          # Get related PRs
+          gh pr list --search "fixes #$ISSUE_NUMBER OR closes #$ISSUE_NUMBER" \
+            --json number,title,state \
+            > related-prs.json
+
+          # Check for existing AI comments
+          EXISTING_COMMENTS=$(jq '[.comments[] | select(.author.login == "github-actions[bot]")] | length' issue-context.json)
+          echo "existing_comments=$EXISTING_COMMENTS" >> $GITHUB_OUTPUT
+
+          echo "✅ Context extracted"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for Duplicates
+        if: env.CHECK_DUPLICATES == 'true'
+        id: duplicates
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+          ISSUE_TITLE=$(jq -r '.title' issue-context.json)
+
+          echo "🔍 Checking for duplicate issues..."
+
+          # Search for similar issues
+          gh issue list \
+            --search "\"$ISSUE_TITLE\" is:issue" \
+            --json number,title,state \
+            --limit 5 \
+            > potential-duplicates.json
+
+          DUPLICATE_COUNT=$(jq 'length' potential-duplicates.json)
+          echo "duplicate_count=$DUPLICATE_COUNT" >> $GITHUB_OUTPUT
+
+          if [ "$DUPLICATE_COUNT" -gt 1 ]; then
+            echo "⚠️ Found $DUPLICATE_COUNT potential duplicates"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Categorize Issue
+        id: categorize
+        run: |
+          echo "🏷️ Categorizing issue..."
+
+          TITLE=$(jq -r '.title // ""' issue-context.json | tr '[:upper:]' '[:lower:]')
+          BODY=$(jq -r '.body // ""' issue-context.json | tr '[:upper:]' '[:lower:]')
+          LABELS=$(jq -r '.labels[].name' issue-context.json | tr '\n' ',' | tr '[:upper:]' '[:lower:]')
+
+          # Simple keyword-based categorization
+          if echo "$TITLE $BODY $LABELS" | grep -qE "bug|error|crash|fail|broken"; then
+            CATEGORY="bug"
+          elif echo "$TITLE $BODY $LABELS" | grep -qE "feature|enhancement|improve|add"; then
+            CATEGORY="feature"
+          elif echo "$TITLE $BODY $LABELS" | grep -qE "question|help|how to|what is"; then
+            CATEGORY="question"
+          elif echo "$TITLE $BODY $LABELS" | grep -qE "document|docs|readme"; then
+            CATEGORY="documentation"
+          else
+            CATEGORY="general"
+          fi
+
+          echo "category=$CATEGORY" >> $GITHUB_OUTPUT
+          echo "📌 Issue category: $CATEGORY"
+        continue-on-error: true
+
+      - name: Generate AI Response
+        id: ai-response
+        run: |
+          echo "🤖 Generating AI response..."
+
+          # Prepare context for AI
+          jq -n \
+            --arg category "${{ steps.categorize.outputs.category }}" \
+            --argjson issue "$(cat issue-context.json)" \
+            --argjson related "$(cat related-prs.json)" \
+            --argjson duplicates "$(cat potential-duplicates.json 2>/dev/null || echo '[]')" \
+            '{
+              task: "issue-response",
+              context: {
+                category: $category,
+                issue: $issue,
+                related_prs: $related,
+                potential_duplicates: $duplicates
+              },
+              config: {
+                model: $ENV.AI_MODEL,
+                temperature: $ENV.AI_TEMPERATURE
+              }
+            }' > ai-request.json
+
+          # Call AI API
+          bash .github/scripts/ai-issue-respond.sh \
+            --context-file ai-request.json \
+            --output-file ai-response.json
+
+          # Check if response was generated
+          if jq -e '.result.response' ai-response.json > /dev/null; then
+            echo "has_response=true" >> $GITHUB_OUTPUT
+            echo "✅ Response generated"
+          else
+            echo "has_response=false" >> $GITHUB_OUTPUT
+            echo "❌ No response generated"
+          fi
+        env:
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        continue-on-error: true
+
+      - name: Format Response
+        if: steps.ai-response.outputs.has_response == 'true'
+        run: |
+          echo "📝 Formatting response..."
+
+          jq -r '
+            "## 🤖 AI Assistant Response\n\n" +
+            .result.response + "\n\n" +
+            (if (.result.suggested_actions | length) > 0 then
+              "### Suggested Actions\n\n" +
+              (.result.suggested_actions | map("- " + .) | join("\n")) + "\n\n"
+            else "" end) +
+            (if (.result.related_resources | length) > 0 then
+              "### Related Resources\n\n" +
+              (.result.related_resources | map("- [" + .title + "](" + .url + ")") | join("\n")) + "\n\n"
+            else "" end) +
+            "---\n" +
+            "*This is an automated response. For complex issues, a human will follow up.*"
+          ' ai-response.json > response-comment.md
+
+          echo "✅ Response formatted"
+
+      - name: Post Response
+        if: steps.ai-response.outputs.has_response == 'true'
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+
+          echo "💬 Posting response to issue #$ISSUE_NUMBER..."
+
+          gh issue comment "$ISSUE_NUMBER" --body "$(cat response-comment.md)"
+
+          echo "✅ Response posted"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Labels
+        if: |
+          steps.ai-response.outputs.has_response == 'true' &&
+          env.ENABLE_AUTO_LABEL == 'true'
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+          CATEGORY="${{ steps.categorize.outputs.category }}"
+
+          echo "🏷️ Adding labels..."
+
+          # Add category label
+          gh issue edit "$ISSUE_NUMBER" --add-label "$CATEGORY"
+
+          # Add AI-responded label
+          gh issue edit "$ISSUE_NUMBER" --add-label "ai-responded"
+
+          echo "✅ Labels added"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Auto-Close if Resolved
+        if: |
+          steps.ai-response.outputs.has_response == 'true' &&
+          env.ENABLE_AUTO_CLOSE == 'true'
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+
+          # Check if AI determined issue can be closed
+          CAN_CLOSE=$(jq -r '.result.can_auto_close // false' ai-response.json)
+
+          if [ "$CAN_CLOSE" == "true" ]; then
+            echo "✅ Issue can be auto-closed"
+
+            gh issue close "$ISSUE_NUMBER" \
+              --comment "This issue has been automatically resolved and closed. If the problem persists, please reopen this issue or create a new one."
+
+            echo "🔒 Issue closed"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Handle Failure
+        if: steps.ai-response.outcome == 'failure'
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number || inputs.issue_number }}"
+
+          gh issue comment "$ISSUE_NUMBER" --body "## ❌ Automated Response Failed
+
+          Sorry, I encountered an error while generating a response. A human team member will review this issue shortly.
+
+          **Error details**: Check workflow run at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true

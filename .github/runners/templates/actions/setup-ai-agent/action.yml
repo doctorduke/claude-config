@@ -1,0 +1,353 @@
+name: 'Setup AI Agent Environment'
+description: 'Common setup for AI agent workflows on self-hosted runners'
+author: 'AI Agent Team'
+
+branding:
+  icon: 'cpu'
+  color: 'blue'
+
+inputs:
+  sparse-checkout:
+    description: 'Enable sparse checkout for performance'
+    required: false
+    default: 'true'
+
+  checkout-paths:
+    description: 'Paths to checkout (newline separated, only used if sparse-checkout is true)'
+    required: false
+    default: |
+      .github/
+
+  ref:
+    description: 'Git ref to checkout (branch, tag, or SHA)'
+    required: false
+    default: ''
+
+  setup-node:
+    description: 'Setup Node.js runtime'
+    required: false
+    default: 'false'
+
+  node-version:
+    description: 'Node.js version to setup'
+    required: false
+    default: '18'
+
+  setup-python:
+    description: 'Setup Python runtime'
+    required: false
+    default: 'false'
+
+  python-version:
+    description: 'Python version to setup'
+    required: false
+    default: '3.11'
+
+  setup-go:
+    description: 'Setup Go runtime'
+    required: false
+    default: 'false'
+
+  go-version:
+    description: 'Go version to setup'
+    required: false
+    default: '1.21'
+
+  enable-caching:
+    description: 'Enable dependency and AI response caching'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    # ===================================================================
+    # STEP 1: Checkout Repository
+    # ===================================================================
+    - name: Sparse Checkout Repository
+      if: inputs.sparse-checkout == 'true'
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: ${{ inputs.checkout-paths }}
+        sparse-checkout-cone-mode: false
+        ref: ${{ inputs.ref || github.ref }}
+        fetch-depth: 1
+
+    - name: Full Checkout Repository
+      if: inputs.sparse-checkout != 'true'
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.ref || github.ref }}
+        fetch-depth: 0
+
+    # ===================================================================
+    # STEP 2: Setup GitHub CLI
+    # ===================================================================
+    - name: Check GitHub CLI
+      id: gh-check
+      shell: bash
+      run: |
+        if command -v gh &> /dev/null; then
+          GH_VERSION=$(gh --version | head -n1 | awk '{print $3}')
+          echo "installed=true" >> $GITHUB_OUTPUT
+          echo "version=$GH_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ GitHub CLI already installed: v$GH_VERSION"
+        else
+          echo "installed=false" >> $GITHUB_OUTPUT
+          echo "⚠️ GitHub CLI not found"
+        fi
+
+    - name: Install GitHub CLI
+      if: steps.gh-check.outputs.installed != 'true'
+      shell: bash
+      run: |
+        echo "📦 Installing GitHub CLI..."
+
+        # Detect OS
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          # Linux installation
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+            sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+            sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+        elif [ "${{ runner.os }}" == "macOS" ]; then
+          # macOS installation
+          brew install gh
+        elif [ "${{ runner.os }}" == "Windows" ]; then
+          # Windows installation (via WSL)
+          echo "⚠️ Running on Windows - ensure GitHub CLI is installed in WSL"
+        fi
+
+        # Verify installation
+        if command -v gh &> /dev/null; then
+          GH_VERSION=$(gh --version | head -n1 | awk '{print $3}')
+          echo "✅ GitHub CLI installed: v$GH_VERSION"
+        else
+          echo "❌ GitHub CLI installation failed"
+          exit 1
+        fi
+
+    - name: Verify GitHub CLI Authentication
+      shell: bash
+      run: |
+        echo "🔐 Verifying GitHub CLI authentication..."
+
+        if gh auth status; then
+          echo "✅ GitHub CLI authenticated"
+        else
+          echo "❌ GitHub CLI not authenticated"
+          echo "Ensure GITHUB_TOKEN or GH_TOKEN is set"
+          exit 1
+        fi
+
+    # ===================================================================
+    # STEP 3: Setup WSL Environment (Windows only)
+    # ===================================================================
+    - name: Setup WSL Environment
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Write-Host "🪟 Configuring WSL environment..."
+
+        # Check WSL status
+        $wslStatus = wsl --status 2>&1
+
+        if ($LASTEXITCODE -eq 0) {
+          Write-Host "✅ WSL is configured"
+          Write-Host $wslStatus
+
+          # Set default version to WSL 2
+          wsl --set-default-version 2
+
+          # List installed distributions
+          Write-Host "`n📋 Installed WSL distributions:"
+          wsl --list --verbose
+        } else {
+          Write-Host "⚠️ WSL not properly configured"
+        }
+
+    # ===================================================================
+    # STEP 4: Setup Runtime Environments
+    # ===================================================================
+    - name: Setup Node.js
+      if: inputs.setup-node == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: ${{ inputs.enable-caching == 'true' && 'npm' || '' }}
+
+    - name: Verify Node.js
+      if: inputs.setup-node == 'true'
+      shell: bash
+      run: |
+        NODE_VERSION=$(node --version)
+        NPM_VERSION=$(npm --version)
+        echo "✅ Node.js $NODE_VERSION"
+        echo "✅ npm $NPM_VERSION"
+
+    - name: Setup Python
+      if: inputs.setup-python == 'true'
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: ${{ inputs.enable-caching == 'true' && 'pip' || '' }}
+
+    - name: Verify Python
+      if: inputs.setup-python == 'true'
+      shell: bash
+      run: |
+        PYTHON_VERSION=$(python --version)
+        PIP_VERSION=$(pip --version)
+        echo "✅ $PYTHON_VERSION"
+        echo "✅ pip $PIP_VERSION"
+
+    - name: Setup Go
+      if: inputs.setup-go == 'true'
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: ${{ inputs.enable-caching == 'true' }}
+
+    - name: Verify Go
+      if: inputs.setup-go == 'true'
+      shell: bash
+      run: |
+        GO_VERSION=$(go version)
+        echo "✅ $GO_VERSION"
+
+    # ===================================================================
+    # STEP 5: Setup Caching
+    # ===================================================================
+    - name: Cache AI Dependencies
+      if: inputs.enable-caching == 'true'
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/ai-models
+          ~/.cache/ai-responses
+          .github/scripts/node_modules
+        key: ai-deps-${{ runner.os }}-${{ hashFiles('.github/scripts/package-lock.json', '.github/scripts/requirements.txt') }}
+        restore-keys: |
+          ai-deps-${{ runner.os }}-
+
+    - name: Cache GitHub CLI Extensions
+      if: inputs.enable-caching == 'true'
+      uses: actions/cache@v3
+      with:
+        path: ~/.local/share/gh/extensions
+        key: gh-extensions-${{ runner.os }}
+        restore-keys: |
+          gh-extensions-
+
+    # ===================================================================
+    # STEP 6: Install Script Dependencies
+    # ===================================================================
+    - name: Install Script Dependencies
+      shell: bash
+      run: |
+        echo "📦 Installing script dependencies..."
+
+        # Create cache directories
+        mkdir -p ~/.cache/ai-models
+        mkdir -p ~/.cache/ai-responses
+
+        # Install jq if not available
+        if ! command -v jq &> /dev/null; then
+          echo "Installing jq..."
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y jq
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            brew install jq
+          fi
+        fi
+
+        # Install other common tools
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          sudo apt-get install -y curl wget git
+        fi
+
+        # Install Node.js dependencies if package.json exists in scripts
+        if [ -f ".github/scripts/package.json" ]; then
+          echo "Installing Node.js script dependencies..."
+          cd .github/scripts
+          npm install
+          cd ../..
+        fi
+
+        # Install Python dependencies if requirements.txt exists in scripts
+        if [ -f ".github/scripts/requirements.txt" ]; then
+          echo "Installing Python script dependencies..."
+          pip install -r .github/scripts/requirements.txt
+        fi
+
+        echo "✅ Dependencies installed"
+
+    # ===================================================================
+    # STEP 7: Validate Environment
+    # ===================================================================
+    - name: Validate Environment
+      shell: bash
+      run: |
+        echo "🔍 Validating environment setup..."
+
+        # Check required tools
+        REQUIRED_TOOLS=("git" "gh" "jq" "curl")
+        MISSING_TOOLS=()
+
+        for tool in "${REQUIRED_TOOLS[@]}"; do
+          if ! command -v "$tool" &> /dev/null; then
+            MISSING_TOOLS+=("$tool")
+          fi
+        done
+
+        if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
+          echo "❌ Missing required tools: ${MISSING_TOOLS[*]}"
+          exit 1
+        fi
+
+        # Print environment info
+        echo "✅ Environment validation passed"
+        echo ""
+        echo "📊 Environment Information:"
+        echo "  Runner OS: ${{ runner.os }}"
+        echo "  Runner Arch: ${{ runner.arch }}"
+        echo "  Working Directory: $(pwd)"
+        echo "  Git Branch: $(git branch --show-current 2>/dev/null || echo 'detached')"
+        echo "  Git SHA: $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+        echo ""
+        echo "🛠️ Tool Versions:"
+        echo "  git: $(git --version | head -n1)"
+        echo "  gh: $(gh --version | head -n1)"
+        echo "  jq: $(jq --version)"
+        echo "  curl: $(curl --version | head -n1)"
+
+        if [ "${{ inputs.setup-node }}" == "true" ]; then
+          echo "  node: $(node --version)"
+          echo "  npm: $(npm --version)"
+        fi
+
+        if [ "${{ inputs.setup-python }}" == "true" ]; then
+          echo "  python: $(python --version)"
+          echo "  pip: $(pip --version | cut -d' ' -f1-2)"
+        fi
+
+        if [ "${{ inputs.setup-go }}" == "true" ]; then
+          echo "  go: $(go version | awk '{print $3}')"
+        fi
+
+        echo ""
+        echo "✅ Setup Complete"
+
+    # ===================================================================
+    # STEP 8: Make Scripts Executable
+    # ===================================================================
+    - name: Make Scripts Executable
+      shell: bash
+      run: |
+        if [ -d ".github/scripts" ]; then
+          echo "🔧 Making scripts executable..."
+          chmod +x .github/scripts/*.sh 2>/dev/null || true
+          echo "✅ Scripts are executable"
+        fi
