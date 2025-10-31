@@ -1,0 +1,13 @@
+{
+  "mask_secrets": true,
+  "mask_in_raw": false,
+  "retention_days": 14,
+  "limits": {
+    "max_errors": 5,
+    "max_error_snippet_lines": 6,
+    "warn_cap": 10,
+    "dupes_cap": 3,
+    "max_line_len": 500
+  }
+}
+

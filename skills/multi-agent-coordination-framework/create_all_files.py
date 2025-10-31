@@ -2,8 +2,11 @@
 """Create all refactored multi-agent-coordination-framework files"""
 
 import os
+from pathlib import Path
 
-os.chdir('D:/doctorduke/github-act/worktrees/refactor-multi-agent/.claude/skills/multi-agent-coordination-framework')
+# Change to the directory containing this script to avoid hardcoded paths
+script_dir = Path(__file__).resolve().parent
+os.chdir(script_dir.as_posix())
 
 # Create KNOWLEDGE.md
 print("Creating KNOWLEDGE.md...")
