@@ -1,164 +1,389 @@
-# Claude Configuration Module
+# Claude Code Documentation Enforcement Hooks
 
-Reusable Claude Code configuration, skills, agents, hooks, and utilities that can be shared across projects via git subtree.
+This directory contains hooks for enforcing documentation standards in the umemee-v0 project.
 
-## Overview
+## Purpose
 
-This module provides:
-- **192 Agent Definitions** - Specialized AI agents for various domains
-- **126 Skill Frameworks** - Reusable skill templates and patterns
-- **16 Hook Scripts** - Log sanitization and session management
-- **Utilities** - Parsers, filters, and core utilities
-- **Configuration Templates** - Reusable configs and thresholds
-- **Documentation** - Guides and reference materials
+The hooks in `hooks.mjs` enforce the following documentation requirements:
+1. Every directory should have a `BRIEF.md` file describing its purpose
+2. Every directory containing code must have a `CLAUDE.md` file with comprehensive development instructions
+3. Documentation files must follow the required structure and quality standards
 
-## Directory Structure
+## Files
 
-```
-.claude/
-├── README.md              # This file
-├── SUBTREE_USAGE.md       # Git subtree usage guide
-├── QUICK_START.md         # Quick start guide
-├── agents/                # Agent definitions (192 files)
-├── skills/                # Skill frameworks (126 files)
-├── hooks/                  # Hook scripts (16 files)
-├── lib/                    # Utilities and parsers (5 files)
-├── config/                 # Configuration templates (6 files)
-├── docs/                   # Documentation (5 files)
-├── commands/               # Command templates (4 files)
-├── expertise/              # Expertise docs (1 file)
-└── tests/                  # Test scripts (1 file)
-```
+- **hooks.mjs** - Main hooks implementation with documentation enforcement logic
+- **test-hooks.mjs** - Test script to validate hooks functionality and scan project compliance
+- **settings.local.json** - Claude Code permissions configuration (NOT COMMITTED - see below)
+- **commands/** - Slash commands for Claude Code workflows
+- **agents/** - Specialized agent definitions (151 types)
 
-## Quick Start
+## Hook Functions
 
-### Using as Subtree
+### Directory Creation Hooks
+- `preDirectoryCreate()` - Validates directory creation and warns about BRIEF.md requirement
+- `postDirectoryCreate()` - Checks if BRIEF.md was created after directory creation
 
-1. **Add to your repository**:
-   ```bash
-   git subtree add \
-     --prefix=.claude \
-     git@github.com:doctorduke/claude-config.git \
-     main \
-     --squash
-   ```
+### File Operation Hooks
+- `onFileChange()` - Ensures CLAUDE.md exists when code files are added to a directory
+- `validateDocumentation()` - Validates structure and quality of documentation files
 
-2. **Configure hooks** (in Claude Code):
-   ```bash
-   /hooks
-   # Add PostToolUse -> Bash -> .claude/hooks/sanitize_bash_output.sh
-   ```
+### Utility Functions
+- `scanProjectDocumentation()` - Scans entire project for documentation compliance
+- `initializeDocumentation()` - Creates template BRIEF.md and CLAUDE.md files
+- `isCodeDirectory()` - Determines if a directory contains code files
+- `validateBriefStructure()` - Validates BRIEF.md structure
+- `validateClaudeStructure()` - Validates CLAUDE.md structure
 
-3. **Register agents**: Agents are automatically available in `agents/`
+## Testing
 
-See [SUBTREE_USAGE.md](SUBTREE_USAGE.md) for detailed instructions.
+Run the test script to check documentation compliance:
 
-## Components
-
-### Agents (`agents/`)
-192 specialized agent definitions covering:
-- Development (backend-architect, frontend-developer, etc.)
-- Architecture (ai-systems-architect, cloud-architect, etc.)
-- Security (security-architect, security-auditor, etc.)
-- Operations (devops-troubleshooter, incident-responder, etc.)
-- Data & AI (data-scientist, mlops-engineer, ai-engineer, etc.)
-- And many more...
-
-### Skills (`skills/`)
-126 skill framework files including:
-- Architecture evaluation framework
-- Multi-agent coordination framework
-- Context engineering framework
-- Security scanning suite
-- Test-driven development framework
-- And more...
-
-### Hooks (`hooks/`)
-16 hook scripts for:
-- Log sanitization (PostToolUse)
-- Token waste estimation (PreToolUse)
-- Session management (SessionStart/End)
-- And more...
-
-### Utilities (`lib/`)
-5 utility files:
-- Parsers (npm, node, python, generic)
-- Filters
-- Core utilities
-
-### Configuration (`config/`)
-6 configuration files:
-- Parser configurations
-- Thresholds
-- Templates
-
-## Distribution
-
-This module is designed to be distributed as a **Git subtree**, allowing it to maintain the same folder structure across repositories while enabling easy updates.
-
-## Files NOT Included
-
-These files are excluded from the subtree (project-specific):
-- `logs/` - Generated log files
-- `settings.local.json` - Local project settings
-- `*.local.*` - Local configuration files
-- `investigation-*.md` - Project-specific investigations
-- `orchestration-*.md` - Project-specific docs
-
-## Usage
-
-### Automatic Agent Invocation
-Claude Code automatically uses agents based on task context.
-
-### Explicit Agent Invocation
-```
-"Use the backend-architect to design this API"
-"Have the security-auditor scan for vulnerabilities"
-```
-
-### Custom Agents
-Add custom agents locally:
 ```bash
-# Create .claude/agents/my-agent.md
-# This file stays local (not in subtree)
+node .claude/test-hooks.mjs
 ```
 
-### Local Configuration
-Use `settings.local.json` for project-specific settings:
-```json
-{
-  "project": "my-project",
-  "custom_settings": "value"
+This will:
+1. Scan the project for missing documentation
+2. Validate existing documentation files
+3. Test hook functionality
+4. Provide a summary of issues found
+
+## Documentation Standards
+
+### BRIEF.md Requirements
+- Must have at least one heading
+- Minimum 50 characters of content
+- At least 3 non-empty lines
+- Should describe the directory's purpose and contents
+
+### CLAUDE.md Requirements
+Must include these sections:
+- `## Purpose` - Module/directory purpose
+- `## Dependencies` - Internal and external dependencies
+- `## Key Files` - Important files and their roles
+- `## Conventions` - Naming and code style guidelines
+
+Additional recommended sections:
+- `## Testing` - Testing approach and commands
+- `## Common Tasks` - Frequent development tasks
+- `## Gotchas` - Known issues and common mistakes
+- `## Architecture Decisions` - Design rationale
+- `## Performance Considerations`
+- `## Security Notes`
+
+## Enforcement Actions
+
+The hooks log all enforcement actions with timestamps:
+- `DIRECTORY_CREATE_ATTEMPT` - Directory creation detected
+- `MISSING_BRIEF` - BRIEF.md not found
+- `MISSING_CLAUDE` - CLAUDE.md not found in code directory
+- `INVALID_BRIEF_STRUCTURE` - BRIEF.md validation failed
+- `INVALID_CLAUDE_STRUCTURE` - CLAUDE.md validation failed
+- `DOCUMENTATION_QUALITY_CHECK` - Documentation validation performed
+- `PROJECT_SCAN_COMPLETE` - Full project scan completed
+- `DOCUMENTATION_CREATED` - Documentation file created
+
+## Skip Patterns
+
+The following directories are automatically excluded from enforcement:
+- `node_modules`
+- `.git`
+- `.claude`
+- `dist`
+- `build`
+- `.next`
+- `.turbo`
+- `coverage`
+
+## Usage Examples
+
+### Initialize documentation for a directory
+```javascript
+import hooks from './.claude/hooks.mjs';
+
+// Create both BRIEF.md and CLAUDE.md
+await hooks.initializeDocumentation('/path/to/directory', 'both');
+
+// Create only BRIEF.md
+await hooks.initializeDocumentation('/path/to/directory', 'brief');
+```
+
+### Scan project for compliance
+```javascript
+import hooks from './.claude/hooks.mjs';
+
+const result = await hooks.scanProjectDocumentation();
+console.log(`Found ${result.summary.errors} errors and ${result.summary.warnings} warnings`);
+```
+
+### Validate a documentation file
+```javascript
+import hooks from './.claude/hooks.mjs';
+
+const result = await hooks.validateDocumentation({
+  filePath: '/path/to/CLAUDE.md'
+});
+if (result.status === 'error') {
+  console.log('Validation errors:', result.errors);
 }
 ```
-This file is gitignored and stays local.
 
-## Updates
+## Slash Commands
 
-### Pull Updates
-```bash
-git subtree pull \
-  --prefix=.claude \
-  git@github.com:doctorduke/claude-config.git \
-  main \
-  --squash
+Slash commands provide reusable workflow templates for Claude Code. Commands are markdown files in `.claude/commands/` directory.
+
+### Available Commands
+
+#### `/orchestrate {task}`
+Activates multi-agent orchestration mode for complex multi-phase tasks.
+
+**When to use**:
+- Tasks requiring 3+ specialized agents
+- Multi-step workflows with dependencies
+- Long-running execution needing resumability
+- Tasks requiring autonomous error recovery
+
+**Usage**:
+```
+/orchestrate Migrate authentication from JWT to OAuth2
 ```
 
-### Push Changes Back
-```bash
-git subtree push \
-  --prefix=.claude \
-  git@github.com:doctorduke/claude-config.git \
-  main
+**What it does**:
+1. Selects a coordination pattern based on task characteristics
+2. Breaks task into logical phases using the pattern
+3. Detects existing state from `.task-state/` markers
+4. Spawns specialized agents (parallel or sequential)
+5. Validates outputs after each phase
+6. Handles errors autonomously (analyze → retry → escalate)
+7. Creates state markers for resumability
+8. Reports progress and pauses only for user input
+
+**Features**:
+- State-based resumption (can pause/resume anytime)
+- Parallel execution of independent tasks
+- Autonomous error recovery with error-detective agent
+- Access to 151 specialized agent types
+- Validation gates between phases
+
+#### `/orchestrate-append`
+Converts existing conversation into orchestrated multi-agent workflow.
+
+**When to use**:
+- Mid-conversation when task complexity increases
+- When discussion reveals multi-step implementation needed
+- To add structure to exploratory work
+
+**Usage**:
+```
+[After discussing a complex feature...]
+/orchestrate-append
 ```
 
-## See Also
+**What it does**:
+1. Reviews conversation history
+2. Synthesizes task and requirements
+3. Defines execution phases from discussion
+4. Applies orchestration loop to synthesized task
 
-- [Subtree Usage Guide](SUBTREE_USAGE.md)
-- [Quick Start Guide](QUICK_START.md)
-- [Documentation](docs/README.md)
+#### `/please-detail`
+Comprehensive work assessment and documentation (existing command).
 
-## License
+**Usage**:
+```
+/please-detail
+```
 
-See repository LICENSE file.
+#### `/expertise-please`
+Forensic expertise investigation for complex problems (existing command).
 
+**Usage**:
+```
+/expertise-please
+```
+
+### Creating Custom Commands
+
+1. Create markdown file in `.claude/commands/`
+2. File name becomes command (without .md extension)
+3. File contents become the prompt template
+4. Use `{task}` placeholder for user input after command
+
+**Example** (`my-command.md`):
+```markdown
+# My Custom Workflow
+
+Task: {task}
+
+Execute the following steps:
+1. Analyze the task
+2. Execute implementation
+3. Report results
+```
+
+**Usage**: `/my-command Implement feature X`
+
+### Command Documentation
+
+For detailed orchestration documentation:
+- **Implementation Guide**: `docs/agent-coordination/_reference/implementation/orchestration-loop.md`
+- **Prompt Templates**: `docs/agent-coordination/_reference/templates/orchestration-prompt.md`
+- **ADR**: `docs/agent-coordination/_reference/adr/ADR-010-orchestration-loop-pattern.md`
+- **Agent Registry**: `docs/agent-coordination/BRIEF.md` and `.claude/agents/`
+
+## Integration with Claude Code
+
+These hooks are designed to integrate with Claude Code's workflow:
+1. When creating new directories, hooks provide reminders about documentation
+2. When adding code files, hooks check for CLAUDE.md presence
+3. Audit logs help track documentation compliance over time
+4. Slash commands provide reusable workflow templates
+
+## Maintenance
+
+To update documentation requirements:
+1. Edit validation functions in `hooks.mjs`
+2. Update required sections arrays
+3. Adjust minimum content lengths
+4. Test changes with `node .claude/test-hooks.mjs`
+
+---
+
+## settings.local.json - Local Permissions Configuration
+
+### Purpose
+
+`settings.local.json` is a **developer-specific** file that grants Claude Code elevated permissions for development operations. This file is excluded from version control to prevent security risks and allow per-developer customization.
+
+### Why Not Committed
+
+**Security Concerns**:
+- Grants broad permissions for bash commands, git operations, and file system access
+- Permissions are environment-specific (developer machine, CI/CD, etc.)
+- Committing would force all developers to use the same permission set
+- Could expose unintended permission grants to code reviewers
+
+**Developer Flexibility**:
+- Each developer can customize permissions based on their workflow
+- Local experimentation without affecting team
+- Different permission requirements for different development tasks
+
+### Location
+
+`.claude/settings.local.json` is listed in `.gitignore` at line 75:
+```
+# Claude settings
+.claude/settings.local.json
+```
+
+### Permissions Granted
+
+This configuration grants Claude Code permission for:
+
+#### Build & Package Management
+- `Bash(node:*)` - Node.js execution
+- `Bash(npm:*)` - npm commands
+- `Bash(pnpm:*)` - pnpm package manager operations
+- `Bash(pnpm install:*)` - Dependency installation
+- `Bash(pnpm build:*)` - Build operations
+- `Bash(pnpm typecheck:*)` - TypeScript validation
+- `Bash(pnpm lint:*)` - Linting operations
+- `Bash(pnpm test:*)` - Test execution
+- `Bash(pnpm add:*)` - Add dependencies
+- `Bash(pnpm view:*)` - View package info
+
+#### Git Operations
+- `Bash(git:*)` - Full git command suite including:
+  - `git add`, `git commit`, `git push` - Version control
+  - `git checkout`, `git fetch`, `git pull` - Branch operations
+  - `git worktree` - Parallel development workflows
+  - `git diff`, `git status` - Repository inspection
+  - `git config`, `git rm`, `git stash` - Configuration and cleanup
+  - `git subtree add` - External module integration
+
+#### GitHub Integration
+- `Bash(gh:*)` - GitHub CLI operations
+- `mcp__github__*` - GitHub MCP server tools:
+  - Pull request operations (get, create, review, merge)
+  - Issue management (get, create, update, comment)
+  - Repository operations
+
+#### File System Operations
+- `Bash(cat:*)`, `Bash(grep:*)`, `Bash(find:*)` - File reading/searching
+- `Bash(echo:*)`, `Bash(mkdir:*)`, `Bash(mv:*)` - File manipulation
+- `Bash(chmod:*)` - Permission changes
+- `mcp__filesystem__*` - Filesystem MCP server tools
+- `Read(//private/tmp/**)` - Temporary file access
+
+#### Development Tools
+- `Bash(npx:*)` - Package execution (create-expo-app, create-next-app, etc.)
+- `Bash(python3:*)` - Python script execution
+- `Bash(for:*)`, `Bash(while:*)`, `Bash(do:*)` - Shell scripting constructs
+- `Bash(awk:*)`, `Bash(tail:*)` - Text processing
+- `WebSearch`, `WebFetch(domain:github.com)` - Web operations
+
+#### Quality Assurance
+- `Bash(pnpm eslint:*)` - ESLint execution
+- `Bash(pnpm fix:newlines:*)` - Newline fixing automation
+- `Bash(pnpm lint:newlines:*)` - Newline validation
+
+### Creating Your Own settings.local.json
+
+1. **Copy from template** (if one exists in repository documentation)
+2. **Start minimal** and add permissions as needed:
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status)",
+      "Bash(pnpm build:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
+```
+
+3. **Grant permissions incrementally**:
+   - Start with read-only operations (`git status`, `cat`, `grep`)
+   - Add build operations when needed (`pnpm build`, `pnpm test`)
+   - Add write operations carefully (`git commit`, `git push`)
+
+4. **Use wildcards wisely**:
+   - `Bash(pnpm:*)` grants ALL pnpm commands
+   - `Bash(pnpm build:*)` grants only `pnpm build` with any arguments
+   - More specific is safer
+
+### Security Best Practices
+
+**DO**:
+- Keep `settings.local.json` in `.gitignore`
+- Review permissions periodically
+- Use specific patterns over wildcards when possible
+- Document why broad permissions are granted (like this section)
+- Test with minimal permissions first
+
+**DON'T**:
+- Commit `settings.local.json` to version control
+- Grant `Bash(*:*)` without understanding implications
+- Share your local settings file with untrusted parties
+- Use production credentials in local settings
+
+### Troubleshooting
+
+**Permission Denied Errors**:
+1. Check if command is in `settings.local.json` allow list
+2. Add specific command pattern (e.g., `Bash(git commit:*)`)
+3. Test with minimal pattern first, expand if needed
+
+**Settings Not Taking Effect**:
+1. Verify file is at `.claude/settings.local.json`
+2. Check JSON syntax is valid
+3. Restart Claude Code session
+4. Check Claude Code logs for parsing errors
+
+### Related Documentation
+
+- Claude Code documentation: https://docs.anthropic.com/claude/docs
+- Project CLAUDE.md: `/CLAUDE.md`
+- Git workflow: `tools/worktree/CLAUDE.md`, `tools/subtree/CLAUDE.md`
