@@ -1,0 +1,202 @@
+<EVALUATION_COMPENDIUM title="CROSS_PROJECT_EVALUATION_STRATEGY">
+    <INSTRUCTIONS>
+        The following data represents a compendium of evaluation strategies across three distinct
+        project types: Agent Context Building, LLM Evaluation Standards (Knowledge Graph
+        Validation), and Prompt Tuning and Refinement. Use this knowledge base as an instruction
+        manual for best practices, core metrics, and implementation timelines.
+    </INSTRUCTIONS>
+
+    <PHASE_1_DEPENDENCIES name="MAPPING_TRACING_AND_EXPERTS">
+        <PROJECT name="1. Agent Context Building">
+            <CORE_GOAL>Integrate evals into agentic workflows to enable learning from past outputs
+                and scale to complex tasks.</CORE_GOAL>
+            <CORE_COMPONENTS>
+                <ITEM>Agent orchestration (e.g., LangChain patterns for multi-step flows)</ITEM>
+                <ITEM>Evaluation metrics (e.g., success rates, error categorization)</ITEM>
+                <ITEM>Feedback loops (e.g., reflection and error analysis)</ITEM>
+                <ITEM>Iterative improvement (e.g., RLHF-inspired post-training)</ITEM>
+            </CORE_COMPONENTS>
+            <CRITICAL_PATHS>
+                <PATH id="1">Eval Definition → Data Collection → Analysis (Ng's iterative eval
+                    building, 5 examples).</PATH>
+                <PATH id="2">Phase Integration → Learning Loop (Evals must embed in sprints; failure
+                    leads to siloed phases, svpino's pipeline).</PATH>
+                <PATH id="3">Scaling to Complexity (Parallelization and tool-use dependencies, Ng's
+                    agent patterns).</PATH>
+            </CRITICAL_PATHS>
+            <EXPERTS>Andrew Ng, LlamaIndex Team, fchollet, Jeremy Howard (Kernels), svpino.</EXPERTS>
+        </PROJECT>
+        <PROJECT name="2. LLM Evaluation Standards (KG Validation)">
+            <CORE_GOAL>Validate knowledge graph generation and retrieval quality using a tiered,
+                human-aligned evaluation framework.</CORE_GOAL>
+            <CORE_COMPONENTS>
+                <ITEM>RAG pipeline (vector database, retrieval engine)</ITEM>
+                <ITEM>Knowledge Graph (KG) creation/validation tools (e.g., LangChain/LlamaIndex KG
+                    builders)</ITEM>
+                <ITEM>Gold standard truth sets (manual or synthetically generated)</ITEM>
+            </CORE_COMPONENTS>
+            <CRITICAL_PATHS>
+                <PATH id="1">Source → Retrieval Score → Generation (Must track `context_recall`
+                    before checking `answer_fidelity`).</PATH>
+                <PATH id="2">KG Structure → Querying Integrity (Evals must ensure generated KG
+                    triple quality and correct graph query execution).</PATH>
+                <PATH id="3">Human Alignment (Metrics need to correlate with human judgment on
+                    relevance and fluency).</PATH>
+            </CRITICAL_PATHS>
+            <EXPERTS>Jerry Liu (LlamaIndex), Harrison Chase (LangChain), Andrej Karpathy, fchollet,
+                Andrew Ng.</EXPERTS>
+        </PROJECT>
+        <PROJECT name="3. Prompt Tuning and Refinement (RLHF-Inspired)">
+            <CORE_GOAL>Improve model responses via systematic prompt engineering, inspired by human
+                feedback (RLHF) principles, using LLM-as-a-Judge.</CORE_GOAL>
+            <CORE_COMPONENTS>
+                <ITEM>A/B testing framework (LangSmith, Weights and Biases)</ITEM>
+                <ITEM>Set of prompt templates (e.g., Chain-of-Thought, persona, few-shot)</ITEM>
+                <ITEM>Judge model (for automated scoring)</ITEM>
+                <ITEM>Feedback loop system (logging)</ITEM>
+            </CORE_COMPONENTS>
+            <CRITICAL_PATHS>
+                <PATH id="1">Prompt Design → Scored Output → Refinement (Feedback must be structured
+                    and automated (LLM-as-a-Judge)).</PATH>
+                <PATH id="2">Judge Reliability → Ground Truth (Judge's score must be validated
+                    against a small, high-fidelity human-scored set (Ng's 5/50 rule)).</PATH>
+                <PATH id="3">Scalability and Drift (Evals must detect performance changes (eval
+                    drift)
+                    when scaling).</PATH>
+            </CRITICAL_PATHS>
+            <EXPERTS>Andrew Ng, fchollet, Ethan Mollick, Jeremy Howard, Harrison Chase (LangChain).</EXPERTS>
+        </PROJECT>
+    </PHASE_1_DEPENDENCIES>
+
+    <PHASE_2_METRICS name="CORE_METRICS_AND_PITFALLS">
+        <PROJECT name="1. Agent Context Building">
+            <PERFORMANCE_FOCUS>
+                <COST>Reduce context window size, use cheaper models (Nano/Flash), cache results
+                    (post:18).</COST>
+                <LATENCY>Parallel execution, asynchronous calls, minimizing tool-use steps (web:41).</LATENCY>
+                <UNFORESEEN_DROPS_FIDELITY>Track deviation from golden sets (Ng's 5/50/500 pattern)
+                    and error categories (svpino's 4-part schema).</UNFORESEEN_DROPS_FIDELITY>
+            </PERFORMANCE_FOCUS>
+            <COMMON_PITFALLS>
+                <ITEM>Over-relying on LLM-as-a-judge (biased, non-reproducible)</ITEM>
+                <ITEM>Ignoring cost creep in chained calls (orchestration)</ITEM>
+                <ITEM>Eval drift (static sets fail new flows)</ITEM>
+                <ITEM>Complexity sinks (too many tools, web:43)</ITEM>
+            </COMMON_PITFALLS>
+            <KEY_METRICS>Success Rate (end-to-end), Latency (p95), Token Usage/Cost (per task),
+                Fidelity/Drift (deviation %).</KEY_METRICS>
+        </PROJECT>
+        <PROJECT name="2. LLM Evaluation Standards (KG Validation)">
+            <PERFORMANCE_FOCUS>
+                <COST>Fine-tune embedding model size; batch KG processing.</COST>
+                <LATENCY>Optimize vector store retrieval (indexing, chunk size) and graph traversal
+                    efficiency.</LATENCY>
+                <UNFORESEEN_DROPS_FIDELITY>Context contamination (retrieval of irrelevant context)
+                    and Answer faithfulness (hallucination rate, web:37).</UNFORESEEN_DROPS_FIDELITY>
+            </PERFORMANCE_FOCUS>
+            <COMMON_PITFALLS>
+                <ITEM>Over-reliance on synthetic data (lacks real-world noise)</ITEM>
+                <ITEM>Failing to evaluate retrieval score separately from generation</ITEM>
+                <ITEM>Using generic LLM-as-a-judge prompts that miss factual errors (web:44)</ITEM>
+            </COMMON_PITFALLS>
+            <KEY_METRICS>Context Precision/Recall (Retrieved), Answer Faithfulness (Generated),
+                Latency (Graph Query), KG Triples Accuracy (Extraction).</KEY_METRICS>
+        </PROJECT>
+        <PROJECT name="3. Prompt Tuning and Refinement (RLHF-Inspired)">
+            <PERFORMANCE_FOCUS>
+                <COST>Minimizing prompt size (removing filler) and number of judge calls.</COST>
+                <LATENCY>Using parallel judge calls or a smaller, faster judge model (Flash/Nano).</LATENCY>
+                <UNFORESEEN_DROPS_FIDELITY>Prod Fidelity: Howard kernels/OpenAI benches vs. real
+                    drops (web:39)—Tradeoff: Kernels 70%, MLE-bench 30%. Watch: Broad automation
+                    overpromises (web:44), cost creep in orchestration (web:41).</UNFORESEEN_DROPS_FIDELITY>
+            </PERFORMANCE_FOCUS>
+            <COMMON_PITFALLS>
+                <ITEM>Hidden objectives (post:34)</ITEM>
+                <ITEM>Chatty refactoring (post:18)</ITEM>
+                <ITEM>Eval drift in scaling (web:37)</ITEM>
+                <ITEM>Biased judges, domain gaps (non-ML, web:29)</ITEM>
+                <ITEM>Security in APIs (MCP, post:17)</ITEM>
+            </COMMON_PITFALLS>
+            <KEY_METRICS>Win Rate (A/B testing), Judge Agreement (vs. Human), Prompt Tokens (Cost),
+                Eval Drift (% deviation).</KEY_METRICS>
+        </PROJECT>
+    </PHASE_2_METRICS>
+
+    <PHASE_3_ROADMAP name="IMPLEMENTATION_BIBLE">
+        <PROJECT name="1. Agent Context Building">
+            <MANDATORY_ADDS>
+                <ITEM>Tracing/Logging (Galileo integration)</ITEM>
+                <ITEM>Robust file persistence (Files API)</ITEM>
+                <ITEM>Structured error output (JSON/Pydantic)</ITEM>
+                <ITEM>Scaling metrics (cost per task, web:41)</ITEM>
+                <ITEM>MiniMax planning for tool-use (post:11)</ITEM>
+            </MANDATORY_ADDS>
+            <KEY_AREAS_TO_AVOID>
+                <ITEM>Prompt injection (non-sandboxed agents)</ITEM>
+                <ITEM>Over-trusting model self-correction (reflection is expensive, web:45)</ITEM>
+                <ITEM>Hard-coding success criteria (non-flexible agents)</ITEM>
+                <ITEM>Ignoring latency impact (UX sink, web:41)</ITEM>
+                <ITEM>Single-loop iteration (RLHF-only, post:34)</ITEM>
+            </KEY_AREAS_TO_AVOID>
+            <TIMELINE>
+                <STEP>Week 1-2: Audit w/ error categories (svpino, post:14) + golden sets (post:12).
+                    Run Ng patterns on 20 samples.</STEP>
+                <STEP>Weeks 3-6: Add traces (Galileo, web:45) + probes (Anthropic, post:30). Test
+                    MiniMax efficiency (post:11).</STEP>
+                <STEP>Month 2: Prototype LlamaIndex RAG-Agent flow (simple tool, post:17).</STEP>
+                <STEP>Month 3: Deploy to staging w/ 500-sample regression bench (post:12).</STEP>
+            </TIMELINE>
+        </PROJECT>
+        <PROJECT name="2. LLM Evaluation Standards (KG Validation)">
+            <MANDATORY_ADDS>
+                <ITEM>Tiered RAG evaluation (LangSmith/LlamaIndex)</ITEM>
+                <ITEM>Full end-to-end latency tracing</ITEM>
+                <ITEM>Separate context/answer metrics (Faithfulness/Recall)</ITEM>
+                <ITEM>Golden KG structure validation (semantic parsing)</ITEM>
+                <ITEM>Integration with persistent storage (Files API, web:21)</ITEM>
+            </MANDATORY_ADDS>
+            <KEY_AREAS_TO_AVOID>
+                <ITEM>Mixing context and answer metrics</ITEM>
+                <ITEM>Optimizing for fluency over factual accuracy</ITEM>
+                <ITEM>Slow graph traversal (linear scans)</ITEM>
+                <ITEM>Ignoring KG quality checks (garbage in, garbage out)</ITEM>
+                <ITEM>Single-source dependence (one document type)</ITEM>
+            </KEY_AREAS_TO_AVOID>
+            <TIMELINE>
+                <STEP>Week 1-2: Establish baseline RAG using 20 documents. Define **Faithfulness**
+                    and **Context Recall** metrics.</STEP>
+                <STEP>Weeks 3-6: Implement LlamaIndex **KG Extractor** and validate 50 triples
+                    against ground truth. Integrate latency tracing.</STEP>
+                <STEP>Month 2: Test different chunking strategies and indexing for improved
+                    **Context Precision** on 100 queries.</STEP>
+                <STEP>Month 3: Finalize end-to-end evaluation with 500-query bench, ensuring
+                    Faithfulness > 95%.</STEP>
+            </TIMELINE>
+        </PROJECT>
+        <PROJECT name="3. Prompt Tuning and Refinement (RLHF-Inspired)">
+            <MANDATORY_ADDS>
+                <ITEM>Auditing suites (Anthropic probes)</ITEM>
+                <ITEM>Domain benches (FinGAIA/FieldWorkArena)</ITEM>
+                <ITEM>Persistence (Files API)</ITEM>
+                <ITEM>Structured separation, compendium (50+ evals, web:21)</ITEM>
+            </MANDATORY_ADDS>
+            <KEY_AREAS_TO_AVOID>
+                <ITEM>Vague/buzzy metrics (ghost-chasing, post:14)</ITEM>
+                <ITEM>Untraced scales (deviations, web:39)</ITEM>
+                <ITEM>Over-privileged agents (sinks enterprises, web:43)</ITEM>
+                <ITEM>Ambiguous automations (failures, web:44)</ITEM>
+                <ITEM>Static prototypes (drops, web:37)</ITEM>
+            </KEY_AREAS_TO_AVOID>
+            <TIMELINE>
+                <STEP>Week 1-2: Audit w/ error categories (svpino, post:14) + golden sets (post:12).
+                    Run Ng patterns on 20 samples.</STEP>
+                <STEP>Weeks 3-6: Add traces (Galileo, web:45) + probes (Anthropic, post:30). Test
+                    MiniMax efficiency (post:11).</STEP>
+                <STEP>Month 2: A/B test Chain-of-Thought vs. standard prompt on 100 production
+                    samples.</STEP>
+                <STEP>Month 3: Formalize Judge Rubric and deploy **Win Rate** monitoring to
+                    production.</STEP>
+            </TIMELINE>
+        </PROJECT>
+    </PHASE_3_ROADMAP>
+</EVALUATION_COMPENDIUM>
