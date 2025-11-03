@@ -66,9 +66,182 @@ description: Recursively decompose a feature into a complete PlanGraph (Intent�
 - **Abstention Calibration**: if confidence <80% on any node, output `INSUFFICIENT` with targeted questions; block that branch.
 - **Ensemble Note**: where designs diverge, list ≥2 options; pick one; record rationale in `node.evidence`.
 
-## UI Projection Enforcement (Critical - Duke's Feedback + v44 Learnings)
+## UI Projection Enforcement (Critical - Duke's Feedback + v44/v45 Learnings)
 
 **MANDATORY: These rules override all other planning rules when user-facing features are involved.**
+
+### Screen Salvage Pattern (v45 Learning - APPLY BEFORE DELETION)
+
+**Lesson Learned (v45)**: When node type classification identifies misclassified "screens", DO NOT just delete them. Many represent legitimate UI requirements that should be converted to the proper artifact type.
+
+**BEFORE deleting any misclassified screen**, classify what it SHOULD be:
+
+```python
+def salvage_misclassified_screen(screen_node):
+    """
+    Convert misclassified 'Screen' nodes to proper artifact types instead of deleting.
+
+    Lesson: v45 had 169 screens, 148 were misclassified. Salvage analysis found 83.4%
+    represented real UI needs (dashboards, settings, components) not standalone screens.
+    """
+
+    # Read screen purpose/statement
+    purpose = screen_node.stmt.lower()
+
+    # Classification decision tree
+
+    # 1. Is it monitoring/analytics data? → Dashboard panel
+    if any(keyword in purpose for keyword in [
+        "analytics", "metrics", "monitoring", "observability",
+        "logs", "traces", "alerts", "slo"
+    ]):
+        return convert_to_dashboard_panel(screen_node)
+        # Creates: Dashboard node with panel definition
+        # Example: screen:analytics → dashboard:admin-observability (panel: "Analytics Overview")
+
+    # 2. Is it configuration/settings? → Settings section
+    if any(keyword in purpose for keyword in [
+        "config", "settings", "preferences", "feature flag",
+        "toggle", "enable", "disable"
+    ]):
+        return convert_to_settings_section(screen_node)
+        # Creates: SettingsSpec node or adds section to existing settings
+        # Example: screen:feature-flags-config → settings:app-config (section: "Feature Flags")
+
+    # 3. Is it a UI element within another screen? → Component
+    if any(keyword in purpose for keyword in [
+        "modal", "drawer", "overlay", "widget", "panel",
+        "notification", "toast", "banner", "indicator"
+    ]):
+        return convert_to_component(screen_node)
+        # Creates: UIComponentContract
+        # Example: screen:notifications → component:notification-drawer
+
+    # 4. Is it admin/developer-only? → Admin tool
+    if any(keyword in purpose for keyword in [
+        "admin", "debug", "developer", "internal tool"
+    ]):
+        return convert_to_admin_tool(screen_node)
+        # Creates: AdminDashboard
+        # Example: screen:agent-access → admin-dashboard:developer-tools
+
+    # 5. Is it a modal/wizard flow? → UX Flow
+    if any(keyword in purpose for keyword in [
+        "wizard", "flow", "step", "onboarding", "tutorial"
+    ]):
+        return convert_to_ux_flow(screen_node)
+        # Creates: UXFlow + UIComponentContract (modal)
+        # Example: screen:onboarding → uxflow:user-onboarding
+
+    # 6. Pure backend operation? → Delete (no UI)
+    if any(keyword in purpose for keyword in [
+        "worker processes", "cache stores", "queue", "background job",
+        "backend", "internal process"
+    ]):
+        return delete_no_ui_needed(screen_node)
+        # Creates: Nothing (legitimate deletion)
+        # Example: screen:queues-workers-worker-processes-job → DELETE
+
+    # 7. Legitimate standalone screen? → Keep
+    return {"action": "keep", "node": screen_node}
+```
+
+**Salvage Conversion Functions**:
+
+```python
+def convert_to_dashboard_panel(screen_node):
+    """Convert monitoring/analytics screen to dashboard panel."""
+
+    # Group related screens into dashboards
+    if "admin" in screen_node.id or "observability" in screen_node.id:
+        dashboard_id = "dashboard:admin-observability"
+    elif "analytics" in screen_node.id:
+        dashboard_id = "dashboard:analytics"
+    else:
+        dashboard_id = "dashboard:metrics"
+
+    # Extract metrics from screen purpose
+    metrics = extract_metrics_from_purpose(screen_node.stmt)
+
+    return {
+        "action": "convert",
+        "delete": [screen_node.id],
+        "create": [{
+            "id": dashboard_id,
+            "type": "Dashboard",
+            "stmt": f"Dashboard for {screen_node.stmt}",
+            "panels": [{
+                "name": screen_node.title or screen_node.id,
+                "metrics": metrics,
+                "source": screen_node.id  # Traceability
+            }]
+        }],
+        "edges": [
+            {"from": "scenario:<original>", "to": dashboard_id, "type": "satisfied_by"}
+        ]
+    }
+
+def convert_to_settings_section(screen_node):
+    """Convert configuration screen to settings section."""
+
+    # Group related settings
+    settings_id = "settings:app-config"
+
+    # Extract controls from screen purpose
+    controls = extract_controls_from_purpose(screen_node.stmt)
+
+    return {
+        "action": "convert",
+        "delete": [screen_node.id],
+        "create_or_update": [{
+            "id": settings_id,
+            "type": "SettingsSpec",
+            "sections": [{
+                "name": screen_node.title,
+                "controls": controls,
+                "source": screen_node.id  # Traceability
+            }]
+        }],
+        "edges": [
+            {"from": "scenario:<original>", "to": settings_id, "type": "satisfied_by"}
+        ]
+    }
+
+def convert_to_component(screen_node):
+    """Convert UI element screen to component contract."""
+
+    return {
+        "action": "convert",
+        "delete": [screen_node.id],
+        "create": [{
+            "id": screen_node.id.replace("screen:", "component:"),
+            "type": "UIComponentContract",
+            "stmt": screen_node.stmt,
+            "parent_screen": "NEEDS_PARENT",  # Must be resolved
+            "needs_review": True,  # Flag for manual review
+            "source": screen_node.id  # Traceability
+        }],
+        "edges": [
+            {"from": "NEEDS_PARENT", "to": screen_node.id.replace("screen:", "component:"), "type": "contains"}
+        ]
+    }
+```
+
+**Salvage Statistics (v45 Example)**:
+
+From v45 screen salvage of 169 screens:
+- **21 kept as screens** (12.4%) - Legitimate standalone screens
+- **14 → 2 dashboards** (8.3%) - Monitoring/analytics consolidated
+- **10 → 1 settings** (5.9%) - Configuration consolidated
+- **116 → 116 components** (68.6%) - UI elements within screens
+- **1 → 1 admin tool** (0.6%) - Developer tools
+- **7 deleted** (4.1%) - Pure backend, no UI
+
+**Result**: 83.4% of "wrong" screens salvaged as proper UI artifacts, preserving requirements.
+
+**Critical Rule**: Always run salvage classification BEFORE deletion. Only delete after confirming "DELETE_NO_UI_NEEDED".
+
+---
 
 ### Pre-Conditions (Non-Negotiable - MUST Execute BEFORE UI Projection)
 
