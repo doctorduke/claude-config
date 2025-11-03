@@ -1,0 +1,20 @@
+{
+  "feature_id": "feat:post-image-upload",
+  "plan_version": "v3",
+  "stats": {
+    "nodes": 42,
+    "edges": 97,
+    "ready": 18,
+    "blocked": 3
+  },
+  "hotset": {
+    "changed": [
+      "contract:auth-refresh",
+      "ix:compose.s3.put.fresh",
+      "ix:compose.auth.refresh.expired"
+    ],
+    "deferred": [
+      "ix:feedcache.purge.miss"
+    ]
+  }
+}

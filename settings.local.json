@@ -18,7 +18,6 @@
       "Bash(gh:*)",
       "Bash(gh auth:*)",
       "Bash(cat:*)",
-
       "Bash(git config:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
@@ -85,8 +84,13 @@
       "mcp__github__search_issues",
       "Bash(./docs/agent-coordination/_reference/patterns/validate-core.sh:*)",
       "Bash(npx tsc:*)",
-      "Bash(jq:*)"
-
+      "Bash(jq:*)",
+      "Bash(while read f)",
+      "Bash(do len=$#)",
+      "Bash(if [ $len -gt 200 ])",
+      "Bash(then echo \"$len $f\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

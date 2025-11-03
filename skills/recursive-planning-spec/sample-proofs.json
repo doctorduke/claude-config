@@ -1,0 +1,86 @@
+{
+  "proofs": {
+    "P1": false,
+    "P2": false,
+    "P3": false,
+    "P4": false,
+    "P5": false,
+    "P6": false,
+    "P7": false,
+    "P8": true,
+    "P9": false,
+    "details": {
+      "p1_topology": {
+        "missing": [
+          "Observability",
+          "Migrations/Backfills"
+        ]
+      },
+      "p2_coverage": [
+        {
+          "scenario": "scenario:compose-image",
+          "expected_ix": 3,
+          "realized_ix": 2,
+          "gaps": 1,
+          "by_interface": {
+            "S3": {
+              "PutObject": {
+                "clusters": 2,
+                "realized": 2,
+                "missing_clusters": []
+              }
+            },
+            "Auth": {
+              "POST /refresh": {
+                "clusters": 1,
+                "realized": 0,
+                "missing_clusters": [
+                  "token_state=expired"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "p3_data_lifecycle": {
+        "violations": [
+          "contract:data:media missing retention"
+        ]
+      },
+      "p4_security": {
+        "violations": [
+          "ix:compose.s3.put.fresh lacks least_priv"
+        ]
+      },
+      "p5_tests": {
+        "missing": [
+          "scenario:compose-image e2e"
+        ]
+      },
+      "p6_observability": {
+        "missing": [
+          "dashboard:upload-latency",
+          "alert:upload-timeout"
+        ]
+      },
+      "p7_rollout": {
+        "violations": [
+          "no rollback steps for posts v2"
+        ]
+      },
+      "p8_ordering": {
+        "blocked_leaves": []
+      },
+      "p9_expansion": {
+        "nonterminals_total": 12,
+        "nonterminals_complete": 9,
+        "expansion_coverage": 0.75,
+        "unexpanded_nodes": [
+          "contract:api:media-presign",
+          "contract:data:media",
+          "scenario:compose-image"
+        ]
+      }
+    }
+  }
+}

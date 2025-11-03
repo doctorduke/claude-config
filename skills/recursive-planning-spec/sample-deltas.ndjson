@@ -1,0 +1,4 @@
+{"op": "add_node", "node": {"id": "contract:auth-refresh", "type": "Contract", "stmt": "POST /auth/refresh exchanges refresh_token for access_token; 401 if invalid; rate-limited; timeouts 5s; idempotent on token hash.", "status": "Open"}}
+{"op": "add_edge", "from": "contract:auth-refresh", "to": "ix:compose.auth.refresh.expired", "type": "depends_on"}
+{"op": "update_node", "id": "ix:compose.s3.put.fresh", "patch": {"status": "Ready"}}
+{"op": "record_unaccounted", "id": "contract:data:media", "patch": {"missing": ["retention", "region"]}}

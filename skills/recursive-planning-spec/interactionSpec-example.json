@@ -1,0 +1,91 @@
+{
+  "id": "ix:compose.s3.put.fresh",
+  "type": "InteractionSpec",
+  "method": "ComposeService.attachImage()",
+  "interface": "S3",
+  "operation": "PutObject",
+  "state": {
+    "token_state": "fresh",
+    "quota": "under",
+    "network": "ok",
+    "region": "us-east-1"
+  },
+  "pre": [
+    "media_id reserved via presign",
+    "content_type \u2208 {image/jpeg,png,webp}",
+    "size \u2264 10MB"
+  ],
+  "in": {
+    "params": {
+      "bucket": "media-orig",
+      "key": "media/{media_id}/orig"
+    },
+    "headers": [
+      "Content-MD5",
+      "x-idempotency-key"
+    ],
+    "body": "binary"
+  },
+  "eff": [
+    "Object stored",
+    "ETag recorded",
+    "emit media.uploaded(media_id, etag)"
+  ],
+  "err": {
+    "retriable": [
+      "5xx",
+      "429",
+      "timeout"
+    ],
+    "non_retriable": [
+      "413",
+      "415"
+    ],
+    "compensation": [
+      "delete orphaned reservation on fatal"
+    ]
+  },
+  "res": {
+    "timeout_ms": 8000,
+    "retry": {
+      "strategy": "exp",
+      "max": 4,
+      "jitter": true
+    },
+    "idem_key": "media:{media_id}"
+  },
+  "obs": {
+    "logs": [
+      "ix.s3.put.start",
+      "ix.s3.put.done",
+      "ix.s3.error"
+    ],
+    "metrics": [
+      "latency_ms",
+      "retries",
+      "error_rate"
+    ],
+    "span": "s3.put"
+  },
+  "sec": {
+    "authZ": "user:write:media",
+    "least_priv": "write-only to /media/{media_id}",
+    "pii": false
+  },
+  "test": {
+    "mocks": [
+      "S3 PutObject success/429/5xx/timeout"
+    ],
+    "acc": [
+      "Given valid JPEG \u226410MB, when PutObject succeeds, then event media.uploaded is emitted with ETag",
+      "Given 429 twice then success, retries==2 and final success"
+    ]
+  },
+  "depends_on": [
+    "contract:api:media-presign",
+    "policy:max-upload-size"
+  ],
+  "owner": "Media",
+  "est_h": 2,
+  "status": "Open"
+}

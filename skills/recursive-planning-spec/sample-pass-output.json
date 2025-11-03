@@ -1,0 +1,175 @@
+{
+  "plan_version": "v3",
+  "deltas": [
+    {
+      "op": "add_node",
+      "node": {
+        "id": "contract:auth-refresh",
+        "type": "Contract",
+        "stmt": "POST /auth/refresh exchanges refresh_token for access_token; 401 if invalid; rate-limited; timeouts 5s; idempotent on token hash.",
+        "status": "Open"
+      }
+    },
+    {
+      "op": "add_edge",
+      "from": "contract:auth-refresh",
+      "to": "ix:compose.auth.refresh.expired",
+      "type": "depends_on"
+    },
+    {
+      "op": "update_node",
+      "id": "ix:compose.s3.put.fresh",
+      "patch": {
+        "status": "Ready"
+      }
+    },
+    {
+      "op": "record_unaccounted",
+      "id": "contract:data:media",
+      "patch": {
+        "missing": [
+          "retention",
+          "region"
+        ]
+      }
+    }
+  ],
+  "task_order": [
+    {
+      "id": "contract:auth-refresh",
+      "lane": "API",
+      "depends_on": []
+    },
+    {
+      "id": "ix:compose.auth.refresh.expired",
+      "lane": "API",
+      "depends_on": [
+        "contract:auth-refresh"
+      ]
+    },
+    {
+      "id": "ix:compose.s3.put.fresh",
+      "lane": "API",
+      "depends_on": [
+        "contract:api:media-presign"
+      ]
+    }
+  ],
+  "top_gaps": [
+    {
+      "gap": "Policy:Retention",
+      "origin": "contract:data:media",
+      "parent": "policy:media-retention",
+      "impact": 7,
+      "proposed_fix": "Add retention + purge job"
+    }
+  ],
+  "changed_nodes": [
+    "contract:auth-refresh",
+    "ix:compose.s3.put.fresh"
+  ],
+  "manifest": {
+    "feature_id": "feat:post-image-upload",
+    "plan_version": "v3",
+    "stats": {
+      "nodes": 42,
+      "edges": 97,
+      "ready": 18,
+      "blocked": 3
+    },
+    "hotset": {
+      "changed": [
+        "contract:auth-refresh",
+        "ix:compose.s3.put.fresh",
+        "ix:compose.auth.refresh.expired"
+      ],
+      "deferred": [
+        "ix:feedcache.purge.miss"
+      ]
+    }
+  },
+  "proofs": {
+    "P1": false,
+    "P2": false,
+    "P3": false,
+    "P4": false,
+    "P5": false,
+    "P6": false,
+    "P7": false,
+    "P8": true,
+    "P9": false,
+    "details": {
+      "p1_topology": {
+        "missing": [
+          "Observability",
+          "Migrations/Backfills"
+        ]
+      },
+      "p2_coverage": [
+        {
+          "scenario": "scenario:compose-image",
+          "expected_ix": 3,
+          "realized_ix": 2,
+          "gaps": 1,
+          "by_interface": {
+            "S3": {
+              "PutObject": {
+                "clusters": 2,
+                "realized": 2,
+                "missing_clusters": []
+              }
+            },
+            "Auth": {
+              "POST /refresh": {
+                "clusters": 1,
+                "realized": 0,
+                "missing_clusters": [
+                  "token_state=expired"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "p3_data_lifecycle": {
+        "violations": [
+          "contract:data:media missing retention"
+        ]
+      },
+      "p4_security": {
+        "violations": [
+          "ix:compose.s3.put.fresh lacks least_priv"
+        ]
+      },
+      "p5_tests": {
+        "missing": [
+          "scenario:compose-image e2e"
+        ]
+      },
+      "p6_observability": {
+        "missing": [
+          "dashboard:upload-latency",
+          "alert:upload-timeout"
+        ]
+      },
+      "p7_rollout": {
+        "violations": [
+          "no rollback steps for posts v2"
+        ]
+      },
+      "p8_ordering": {
+        "blocked_leaves": []
+      },
+      "p9_expansion": {
+        "nonterminals_total": 12,
+        "nonterminals_complete": 9,
+        "expansion_coverage": 0.75,
+        "unexpanded_nodes": [
+          "contract:api:media-presign",
+          "contract:data:media",
+          "scenario:compose-image"
+        ]
+      }
+    }
+  }
+}

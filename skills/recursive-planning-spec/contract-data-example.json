@@ -1,0 +1,53 @@
+{
+  "id": "contract:data:media",
+  "type": "Contract",
+  "stmt": "Schema and lifecycle for media originals & renditions.",
+  "schema": {
+    "table": "media",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "pk": true
+      },
+      {
+        "name": "owner_id",
+        "type": "uuid",
+        "index": true
+      },
+      {
+        "name": "etag",
+        "type": "text"
+      }
+    ]
+  },
+  "indices": [
+    [
+      "owner_id",
+      "created_at"
+    ]
+  ],
+  "migration": {
+    "id": "2025_11_01_media.sql",
+    "backfill": "N/A"
+  },
+  "retention": {
+    "policy": "keep-variants",
+    "ttl_days": null
+  },
+  "pii": {
+    "contains": false,
+    "fields": []
+  },
+  "region": {
+    "primary": "us-east-1",
+    "dr": "us-west-2"
+  },
+  "test": {
+    "migration": [
+      "apply",
+      "rollback"
+    ]
+  },
+  "status": "Open"
+}

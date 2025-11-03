@@ -1,0 +1,77 @@
+{
+  "id": "contract:api:media-presign",
+  "type": "Contract",
+  "stmt": "Issue presigned upload URL for media originals.",
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/media/presign",
+      "req": {
+        "mime": "image/jpeg",
+        "sha256": "<hex>"
+      },
+      "res": {
+        "upload_url": "<url>",
+        "media_id": "<uuid>"
+      }
+    }
+  ],
+  "error_taxonomy": [
+    {
+      "code": "400",
+      "name": "BadRequest"
+    },
+    {
+      "code": "401",
+      "name": "Unauthorized"
+    },
+    {
+      "code": "413",
+      "name": "PayloadTooLarge"
+    },
+    {
+      "code": "429",
+      "name": "RateLimit"
+    }
+  ],
+  "idempotency": {
+    "strategy": "key",
+    "header": "x-idempotency-key"
+  },
+  "timeouts_ms": {
+    "default": 5000
+  },
+  "rate_limit": {
+    "bucket": "user",
+    "rps": 10
+  },
+  "versioning": {
+    "semver": "v1"
+  },
+  "observability": {
+    "logs": [
+      "api.req",
+      "api.res",
+      "api.err"
+    ],
+    "metrics": [
+      "latency_ms",
+      "error_rate"
+    ],
+    "span": "api.media.presign"
+  },
+  "security": {
+    "authZ": "user:write",
+    "scopes": [
+      "media:write"
+    ]
+  },
+  "test": {
+    "contract": [
+      "happy",
+      "invalid-mime",
+      "rate-limited"
+    ]
+  },
+  "status": "Open"
+}
