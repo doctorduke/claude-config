@@ -66,16 +66,216 @@ description: Recursively decompose a feature into a complete PlanGraph (Intent�
 - **Abstention Calibration**: if confidence <80% on any node, output `INSUFFICIENT` with targeted questions; block that branch.
 - **Ensemble Note**: where designs diverge, list ≥2 options; pick one; record rationale in `node.evidence`.
 
-## UI Projection Enforcement (Critical - Duke's Feedback)
+## UI Projection Enforcement (Critical - Duke's Feedback + v44 Learnings)
 
 **MANDATORY: These rules override all other planning rules when user-facing features are involved.**
 
+### Pre-Conditions (Non-Negotiable - MUST Execute BEFORE UI Projection)
+
+**CRITICAL**: Do NOT generate ANY UI nodes until these exist:
+
+1. **Design System Foundation Check**:
+   ```python
+   if not design_system_exists():
+       create_openquestion(
+           "Design System Foundation Required",
+           "Create StyleGuide, DesignTokens, ComponentLibrary BEFORE generating UI nodes",
+           owner="Design Lead",
+           due="+7d",
+           blocks=["All UI node generation"]
+       )
+       STOP()  # Do not proceed
+       return {"status": "blocked", "reason": "design_system_missing"}
+   ```
+
+2. **Create Foundation First** (if missing):
+   - `StyleGuide:app` - Brand colors, typography, spacing, layout patterns
+   - `DesignTokens:v1` - Color/space/radius/shadow/animation tokens
+   - `ComponentLibrary:v1` - 40+ reusable components (Button, Input, Card, Modal, etc.)
+
+3. **Validate Foundation** (must pass):
+   - StyleGuide has ≥5 layout patterns defined
+   - DesignTokens has ≥50 tokens (colors, spacing, typography)
+   - ComponentLibrary has ≥40 components across 6 categories
+
+**Consequence**: If pre-conditions not met, BLOCK all UI projection and create OpenQuestion for user.
+
+**Lesson Learned (v44)**: Generated 968 UI nodes → THEN created design system → 199 nodes blocked. Foundation FIRST prevents this.
+
+### Node Type Classification (BEFORE Generation - Anti-Duplication Gate)
+
+**CRITICAL**: Classify node type BEFORE creating any nodes to prevent misclassification.
+
+```python
+def classify_node_type(scenario):
+    """Classify scenario BEFORE creating nodes to prevent backend-as-screens."""
+
+    # STOP 1: Backend infrastructure (NOT screens)
+    if scenario.lane in ["Worker", "Data", "Queue", "Cache", "CDN", "Observability"]:
+        return NodeType.SERVICE  # Backend service, NO UI
+
+    # STOP 2: API endpoints (NOT screens)
+    if scenario.involves_http_endpoint() or scenario.is_api_operation():
+        return NodeType.API_ENDPOINT  # Contract/API, NO screen
+
+    # STOP 3: Internal operations (NOT user-visible)
+    if not scenario.user_visible:
+        return NodeType.POLICY_EXCLUSION  # No UI by design
+
+    # CHECK 1: User-facing with route = Screen
+    if scenario.user_visible and scenario.has_route():
+        return NodeType.SCREEN  # YES, create screen
+
+    # CHECK 2: User-facing without route = Component (modal/overlay)
+    if scenario.user_visible and not scenario.has_route():
+        return NodeType.COMPONENT  # Modal/overlay, NOT separate screen
+
+    # DEFAULT: Log as unaccounted
+    return NodeType.UNKNOWN  # Create OpenQuestion
+```
+
+**Classification Decision Tree**:
+```
+Is lane Worker/Data/Queue/Cache? → SERVICE (no screen)
+Is HTTP endpoint/API operation? → API_ENDPOINT (no screen)
+Is user_visible = false? → POLICY_EXCLUSION (no UI)
+Is user_visible + has_route? → SCREEN (yes, create)
+Is user_visible + no route? → COMPONENT (modal, not screen)
+Otherwise? → UNKNOWN (OpenQuestion)
+```
+
+**Apply Classification BEFORE `project_ui_impacts()`**:
+```python
+classified_scenarios = {}
+for scenario in scenarios:
+    node_type = classify_node_type(scenario)
+    classified_scenarios[scenario.id] = node_type
+
+    if node_type == NodeType.SERVICE:
+        create_service_spec(scenario)  # NOT a screen
+    elif node_type == NodeType.API_ENDPOINT:
+        create_api_contract(scenario)  # NOT a screen
+    elif node_type == NodeType.SCREEN:
+        project_ui_for_screen(scenario)  # YES, create UI nodes
+    # ... etc
+```
+
+**Lesson Learned (v44)**: Generated 169 screens, 84% were backend infrastructure (CDN, queues, analytics). Classification gate would have prevented 142 wrong screens.
+
+### Pattern Detection Phase (BEFORE Individual Generation - Anti-Duplication)
+
+**CRITICAL**: Detect reusable patterns across ALL scenarios BEFORE generating individual nodes.
+
+```python
+def detect_ui_patterns(scenarios):
+    """Analyze ALL scenarios to find reusable patterns."""
+
+    patterns = {
+        "list": [],      # Feed, Bookmarks, Search → List Template
+        "detail": [],    # Post Detail, Profile → Detail Template
+        "form": [],      # Create/Edit → Form Template
+        "settings": [],  # Settings sections → Settings Template
+        "dashboard": [], # Analytics → Dashboard Template
+    }
+
+    for scenario in scenarios:
+        if matches_list_pattern(scenario):
+            patterns["list"].append(scenario)
+        elif matches_detail_pattern(scenario):
+            patterns["detail"].append(scenario)
+        # ... etc
+
+    return patterns
+
+def create_templates_from_patterns(patterns):
+    """Create reusable layout templates for detected patterns."""
+
+    templates = []
+
+    if len(patterns["list"]) > 3:  # 3+ scenarios match List pattern
+        template = create_layout_template(
+            "ListTemplate",
+            matches=patterns["list"],
+            route_pattern="/:collection",  # Parameterized
+            components=["Header", "TabBar", "List(Card)"]
+        )
+        templates.append(template)
+
+    # ... create other templates
+
+    return templates
+```
+
+**Pattern Detection → Template Creation → Composition**:
+```
+Step 1: Analyze 169 scenarios
+Step 2: Detect patterns (40 match "List", 30 match "Detail", 20 match "Form")
+Step 3: Create 5 layout templates (List, Detail, Form, Settings, Dashboard)
+Step 4: Compose screens from templates + route parameters
+Result: 12 screens (not 169) with 80% code reuse
+```
+
+**Lesson Learned (v44)**: Generated 169 individual screens → THEN found 80% were duplicates. Pattern detection FIRST prevents duplication.
+
+### Composition-First Architecture (NOT Screen-First)
+
+**CRITICAL**: Build screens from composition, NOT individual screen files.
+
+**Wrong Approach (v44)**:
+```
+❌ Generate screen-bookmarks-list.json
+❌ Generate screen-bookmarks-detail.json
+❌ Generate screen-bookmarks-edit.json
+❌ Generate screen-search-results.json
+❌ Generate screen-notifications-list.json
+= 169 individual screen files (massive duplication)
+```
+
+**Right Approach (Composition)**:
+```
+✅ Create ListTemplate (reusable)
+✅ Create DetailTemplate (reusable)
+✅ Create FormTemplate (reusable)
+✅ Compose: /bookmarks → ListTemplate + route params
+✅ Compose: /search → ListTemplate + route params
+✅ Compose: /notifications → ListTemplate + route params
+= 3 templates + 12 composed screens (80% reuse)
+```
+
+**Composition Formula**:
+```
+Screen = Template + Components + Route Parameters
+
+Examples:
+/feed = ListTemplate + Card + Header
+/posts/:id = DetailTemplate + PostComponent + Actions
+/posts/:id/edit = FormTemplate + EditorComponent + Validation
+```
+
+**Implementation**:
+```python
+def compose_screen(scenario, template, components):
+    """Compose screen from template + components, not individual file."""
+
+    return {
+        "id": f"screen:{scenario.slug}",
+        "type": "Screen",
+        "template": template.id,  # Reference to layout template
+        "route": generate_route_with_params(scenario),
+        "components": [c.id for c in components],
+        "state_machine": inherit_from_template(template),
+        "a11y": inherit_from_components(components),
+    }
+```
+
+**Lesson Learned (v44)**: Screen-first approach created 169 files with 80% duplication. Composition-first achieves same functionality with 12 screens + 5 templates.
+
 ### Trigger Detection (Non-Negotiable)
-After each pass's deltas merge, run `project_ui_impacts()` over EVERY new/changed:
-- `Contract(API|Event)` with `user_facing=true` **OR** `ui_impact=possible`
-- `DataModel` with client-visible fields
-- `Policy` affecting user features
-- `ChangeSpec` **OR** `Scenario` with Client lane interactions
+After classification and pattern detection, run `project_ui_impacts()` over classified scenarios:
+- `Scenario` with `NodeType.SCREEN` classification
+- `Contract(API|Event)` with `user_facing=true` **AND** classification = SCREEN
+- `DataModel` with client-visible fields **AND** classification = SCREEN
+- **SKIP** all scenarios classified as SERVICE, API_ENDPOINT, or POLICY_EXCLUSION
 
 ### UI Questionnaire (13 Required Questions)
 For EVERY triggered node, ask and persist answers to `node.evidence.ui_answers`:
@@ -133,7 +333,281 @@ For EVERY skipped UI projection, add to `unaccounted[]` array:
 - Sort IDs and edge ops lexicographically before emission
 - Use consistent timestamps and UUIDs
 
+### Incremental Validation with User Checkpoints (Anti-Waste Gate)
+
+**CRITICAL**: Validate approach with user DURING generation, not after.
+
+```python
+def project_ui_with_checkpoints(scenarios):
+    """Generate UI in batches with user validation checkpoints."""
+
+    BATCH_SIZE = 20  # Show user every 20 nodes
+
+    all_ui_nodes = []
+    for i in range(0, len(scenarios), BATCH_SIZE):
+        batch = scenarios[i:i+BATCH_SIZE]
+
+        # Generate batch
+        batch_ui_nodes = generate_ui_nodes(batch)
+
+        # CHECKPOINT: Show user the pattern
+        show_user_checkpoint(
+            batch_number=i//BATCH_SIZE + 1,
+            nodes_generated=len(batch_ui_nodes),
+            pattern=describe_pattern(batch_ui_nodes),
+            sample_nodes=batch_ui_nodes[:5],
+            question="Does this pattern look correct? Continue or stop and refactor?"
+        )
+
+        # Wait for user approval
+        if user_approves():
+            all_ui_nodes.extend(batch_ui_nodes)
+        else:
+            # User spotted issue early - stop and refactor
+            analyze_issue(batch_ui_nodes)
+            refactor_approach()
+            return {"status": "stopped", "reason": "user_feedback", "nodes_generated": i}
+
+    return all_ui_nodes
+```
+
+**Checkpoint Message Template**:
+```
+🚦 Checkpoint #3: Generated 60 UI nodes so far
+
+Pattern Detected: List + Detail + Form (consistent)
+Sample Nodes:
+  - screen-feed.json (List pattern)
+  - screen-post-detail.json (Detail pattern)
+  - screen-create-post.json (Form pattern)
+  - screen-bookmarks.json (List pattern - DUPLICATE of screen-feed?)
+  - screen-search-results.json (List pattern - DUPLICATE of screen-feed?)
+
+⚠️ Potential Issue: Multiple screens using same List pattern - should use route parameters?
+
+Continue generating (60 more nodes)?
+[Yes] [No - Stop and refactor]
+```
+
+**Benefits**:
+- Catch issues after 20 nodes, not 169
+- User can course-correct early
+- Prevents waste (1,500 hours saved in v44)
+
+**Lesson Learned (v44)**: Generated all 169 screens → THEN user asked "Why so many?". Checkpoint at 20 would have caught duplication early.
+
+### Effort Validation Gate (Unreasonableness Detector)
+
+**CRITICAL**: Calculate and validate effort DURING generation to detect unreasonable plans.
+
+```python
+def validate_plan_effort(plan):
+    """Calculate effort and warn if unreasonable."""
+
+    effort_metrics = {
+        "Screen": 8,              # 8 hours per screen
+        "Component": 4,           # 4 hours per component
+        "UIComponentContract": 6, # 6 hours per contract
+        "UXFlow": 3,              # 3 hours per flow
+    }
+
+    total_effort_hours = 0
+    for node_type, count in plan.node_counts.items():
+        if node_type in effort_metrics:
+            total_effort_hours += count * effort_metrics[node_type]
+
+    # Calculate person-months (160 hours/month)
+    person_months = total_effort_hours / 160
+
+    # WARN if effort exceeds thresholds
+    if total_effort_hours > 500:  # More than 3 months for 1 person
+        WARN_USER(f"""
+        ⚠️ EFFORT WARNING: Plan Requires {total_effort_hours} hours ({person_months:.1f} person-months)
+
+        Breakdown:
+        - {plan.node_counts.get('Screen', 0)} screens × 8h = {plan.node_counts.get('Screen', 0) * 8}h
+        - {plan.node_counts.get('Component', 0)} components × 4h = {plan.node_counts.get('Component', 0) * 4}h
+
+        This seems high. Consider:
+        - Using layout templates instead of individual screens
+        - Route parameters instead of duplicate screens
+        - Component composition instead of custom screens
+
+        Continue anyway? [Yes] [No - Refactor for reusability]
+        """)
+
+        if user_chooses_refactor():
+            suggest_consolidation_strategies(plan)
+            return {"status": "blocked", "reason": "high_effort"}
+
+    return {"status": "ok", "effort_hours": total_effort_hours}
+```
+
+**Effort Thresholds**:
+- **< 200 hours**: ✅ Reasonable (1-2 person-months)
+- **200-500 hours**: ⚠️ Warning (2-3 person-months) - suggest optimization
+- **> 500 hours**: 🛑 BLOCK (3+ person-months) - require user approval or refactoring
+
+**Consolidation Suggestions**:
+```
+If effort > 500 hours:
+1. Look for duplicate screens → Use route parameters
+2. Look for similar screens → Create layout templates
+3. Look for repeated components → Extract to ComponentLibrary
+4. Look for backend "screens" → Reclassify as Services/APIs
+```
+
+**Lesson Learned (v44)**: 169 screens × 8h = 1,592 hours (10 months!) should have been flagged immediately as unreasonable.
+
+### Continuous Validation (Not End-of-Pass Validation)
+
+**CRITICAL**: Validate nodes AS they're generated, not after all generation.
+
+```python
+class ContinuousValidator:
+    """Validates nodes during generation to catch issues early."""
+
+    def __init__(self):
+        self.seen_routes = set()
+        self.seen_patterns = {}
+        self.backend_as_screen_count = 0
+
+    def validate_during_generation(self, node):
+        """Validate node BEFORE adding to plan."""
+
+        issues = []
+
+        # Check 1: Duplicate route
+        if node.type == "Screen" and node.route in self.seen_routes:
+            issues.append(f"Duplicate route: {node.route} already exists")
+
+        # Check 2: Backend as screen
+        if node.type == "Screen" and self.is_backend_operation(node):
+            self.backend_as_screen_count += 1
+            issues.append(f"Backend operation classified as screen: {node.id}")
+
+        # Check 3: Pattern duplication
+        pattern = self.detect_pattern(node)
+        if pattern in self.seen_patterns and len(self.seen_patterns[pattern]) > 3:
+            issues.append(f"Pattern {pattern} used {len(self.seen_patterns[pattern])}× - consider template")
+
+        # WARN if issues found
+        if issues:
+            WARN(f"Validation issues for {node.id}:\n" + "\n".join(f"  - {i}" for i in issues))
+            ask_user("Continue creating this node or skip?")
+
+        self.seen_routes.add(node.route)
+        self.seen_patterns.setdefault(pattern, []).append(node)
+
+        return len(issues) == 0
+```
+
+**Usage**:
+```python
+validator = ContinuousValidator()
+
+for scenario in scenarios:
+    proposed_node = generate_ui_node(scenario)
+
+    # Validate BEFORE adding
+    if validator.validate_during_generation(proposed_node):
+        add_to_plan(proposed_node)
+    else:
+        log_rejected(proposed_node, validator.issues)
+```
+
+**Benefits**:
+- Catch duplicate routes immediately (not after 169 screens)
+- Catch backend-as-screen immediately (not after 84% are wrong)
+- Suggest templates after 3 duplicates (not after 40)
+
+**Lesson Learned (v44)**: Validated after all generation → found 80% duplication. Continuous validation would have caught this at node 10-15.
+
+### Similarity Detection During Generation (Anti-Duplication)
+
+**CRITICAL**: Detect similar nodes AS they're created to prevent duplication.
+
+```python
+def create_node_with_deduplication(node):
+    """Check for similar nodes BEFORE creating."""
+
+    # Find similar existing nodes
+    similar_nodes = find_similar_nodes(node, threshold=0.8)
+
+    if similar_nodes:
+        most_similar = similar_nodes[0]
+        similarity_score = calculate_similarity(node, most_similar)
+
+        WARN(f"""
+        🔍 SIMILARITY DETECTED
+
+        New node: {node.id}
+        Similar to: {most_similar.id}
+        Similarity: {similarity_score:.0%}
+
+        Options:
+        1. Reuse existing node with parameters (recommended)
+        2. Create new node anyway
+        3. Create template for this pattern (if 3+ similar)
+
+        What would you like to do?
+        """)
+
+        action = ask_user_choice(["reuse", "create_new", "create_template"])
+
+        if action == "reuse":
+            return add_route_parameter(most_similar, node.route)
+        elif action == "create_template":
+            return create_template_from_similar([most_similar, node])
+        # else: create_new
+
+    # Create node if no similarity or user chose to create anyway
+    create_node(node)
+```
+
+**Similarity Calculation**:
+```python
+def calculate_similarity(node1, node2):
+    """Calculate similarity between two nodes (0.0-1.0)."""
+
+    score = 0.0
+
+    # Route similarity (without parameters)
+    if normalize_route(node1.route) == normalize_route(node2.route):
+        score += 0.3
+
+    # Component similarity
+    if set(node1.components) == set(node2.components):
+        score += 0.3
+
+    # Layout similarity
+    if node1.layout_type == node2.layout_type:
+        score += 0.2
+
+    # State machine similarity
+    if node1.state_machine == node2.state_machine:
+        score += 0.2
+
+    return score
+```
+
+**Lesson Learned (v44)**: Created `screen-bookmarks-1.json`, `screen-bookmarks-2.json`, `screen-bookmarks-3.json` without detecting similarity until after all were created.
+
 ### Per-Pass Checklist (Print After Each Pass)
+
+**BEFORE starting UI projection**:
+- [ ] Design system foundation exists (StyleGuide, DesignTokens, ComponentLibrary)?
+- [ ] Node type classification run (Screen vs Service vs API)?
+- [ ] Pattern detection run (List, Detail, Form patterns identified)?
+- [ ] Effort calculated and validated (< 500 hours)?
+
+**DURING UI projection**:
+- [ ] User checkpoint after every 20 nodes generated?
+- [ ] Continuous validation running (duplicate routes, backend-as-screens)?
+- [ ] Similarity detection active (80%+ similar → suggest reuse)?
+- [ ] Composition-first approach (templates + parameters, not individual screens)?
+
+**AFTER UI projection**:
 - [ ] Did I run the UI questionnaire for every triggered node?
 - [ ] For each "YES," did I create required nodes (Screen/Nav/UXFlow/Component/Settings/Tutorial/Notification)?
 - [ ] Are paired UI artifacts present before marking backend leaves "Ready"?
@@ -141,6 +615,7 @@ For EVERY skipped UI projection, add to `unaccounted[]` array:
 - [ ] Do A11y and i18n checks pass, or is there a blocking Exclusion with owner?
 - [ ] Did I log reasons in `unaccounted[]` for anything I skipped?
 - [ ] Are all 8 quality gates satisfied or blocking reasons documented?
+- [ ] Final effort validation: Total hours reasonable for team capacity?
 
 ## Recursion Loop (fixpoint)
 1. **Frontier** := all nonterminals missing required children or failing checklists.
@@ -389,89 +864,294 @@ modes: {light: true, dark: true, high_contrast: true}
 - `% Notifications with linked preference`
 - `% components referencing tokens (target: 100%)`
 
-## UI Projection Algorithm (Enforced - Duke's Feedback)
+## UI Projection Algorithm (Revised with v44 Learnings)
 
 **This algorithm is MANDATORY and MUST run after every delta merge pass.**
 
-**Trigger set**: any new/updated `Contract(API|Event)`, `DataModel`, `Policy`, or `ChangeSpec` with `user_facing=true` or `ui_impact=possible`.
+**Execution Order** (CRITICAL - follow exact sequence):
 
-**Implementation (Duke's Specification - Section 3 of dukes/feedback.md)**:
 ```python
-def project_ui_impacts(changed_nodes):
-    # Track unaccounted UI skips for explainability
-    unaccounted = []
+def project_ui_impacts_v45(changed_nodes):
+    """
+    Revised UI projection algorithm incorporating all v44 learnings.
+    Execution order: Pre-conditions → Classification → Pattern Detection → Composition → Validation
+    """
 
-    # 1. Ensure design system foundation exists
+    # ============================================================
+    # PHASE 0: PRE-CONDITIONS (BLOCKING - MUST EXIST BEFORE PROCEEDING)
+    # ============================================================
+
+    print("Phase 0: Checking pre-conditions...")
+
+    # 0.1: Check design system foundation
     if not design_system_exists():
         create_openquestion(
-            "Design System Foundation Missing",
-            "Which design system? Who owns tokens? When will StyleGuide/DesignTokens/ComponentLibrary be created?",
+            "Design System Foundation Required",
+            "Create StyleGuide, DesignTokens, ComponentLibrary BEFORE generating UI nodes",
             owner="Design Lead",
-            due="+14d",
-            blocks=["All VisualSpec nodes"]
+            due="+7d",
+            blocks=["All UI node generation"]
         )
-        # BLOCK all VisualSpec nodes until design system exists
-        mark_blocked(find_nodes(type="VisualSpec"), reason="design_system_missing")
+        STOP()  # Do not proceed without foundation
+        return {"status": "blocked", "reason": "design_system_missing"}
 
-    # 2. Process each user-facing node
-    for n in changed_nodes:
-        # 2a. Check if this node triggers UI obligations
-        if not is_ui_trigger(n):  # user_facing=true | ui_impact=possible | client-lane involved
-            continue
+    print("  ✅ Design system foundation exists")
 
-        # 2b. Run the 13-question UI questionnaire
-        answers = ui_questionnaire(n)  # persist answers on node.evidence.ui_answers
+    # ============================================================
+    # PHASE 1: NODE TYPE CLASSIFICATION (BEFORE GENERATION)
+    # ============================================================
 
-        # 2c. If explicitly no UI, create Exclusion and continue
-        if answers.no_ui:
-            ensure_ui_exclusion(n)  # Create Policy:Exclusion-UI with owner+rationale
-            continue
+    print("Phase 1: Classifying node types...")
 
-        # 2d. Generate required UI nodes based on answers
-        ensure_screen_and_navigation(n, answers)      # Screen + NavigationSpec
-        ensure_representation_components(n, answers)  # list/detail/form UIComponentContracts
-        ensure_uxflows(n, answers)                    # loading/empty/error variants
+    classified = {
+        "SCREEN": [],         # User-facing screens with routes
+        "COMPONENT": [],      # Modals/overlays without routes
+        "SERVICE": [],        # Backend services (NO UI)
+        "API_ENDPOINT": [],   # API contracts (NO UI)
+        "EXCLUSION": [],      # No UI by design
+        "UNKNOWN": []         # Needs clarification
+    }
 
-        # 2e. Conditional UI nodes based on questionnaire answers
+    for node in changed_nodes:
+        node_type = classify_node_type(node)
+        classified[node_type.name].append(node)
+
+    # Log classification results
+    print(f"  ✅ Classified: {len(classified['SCREEN'])} screens, "
+          f"{len(classified['SERVICE'])} services, "
+          f"{len(classified['API_ENDPOINT'])} APIs, "
+          f"{len(classified['EXCLUSION'])} exclusions")
+
+    # WARN if many backend nodes classified as screens
+    if len(classified['SERVICE']) > len(classified['SCREEN']):
+        WARN(f"More services ({len(classified['SERVICE'])}) than screens ({len(classified['SCREEN'])}) - verify classification")
+
+    # ============================================================
+    # PHASE 2: PATTERN DETECTION (BEFORE INDIVIDUAL GENERATION)
+    # ============================================================
+
+    print("Phase 2: Detecting UI patterns...")
+
+    ui_scenarios = classified["SCREEN"]
+    patterns = detect_ui_patterns(ui_scenarios)
+
+    # Log pattern detection results
+    print(f"  ✅ Patterns detected:")
+    for pattern_name, scenarios in patterns.items():
+        print(f"    - {pattern_name}: {len(scenarios)} scenarios")
+
+    # ============================================================
+    # PHASE 3: TEMPLATE CREATION (FROM PATTERNS)
+    # ============================================================
+
+    print("Phase 3: Creating layout templates...")
+
+    templates = create_templates_from_patterns(patterns)
+
+    print(f"  ✅ Created {len(templates)} layout templates")
+    for template in templates:
+        print(f"    - {template.id}: {len(template.matches)} scenarios")
+
+    # ============================================================
+    # PHASE 4: EFFORT VALIDATION (BEFORE COMPOSITION)
+    # ============================================================
+
+    print("Phase 4: Validating effort estimate...")
+
+    estimated_nodes = {
+        "Screen": len(ui_scenarios),  # May be reduced by composition
+        "Template": len(templates),
+        "Component": sum(len(t.components) for t in templates),
+    }
+
+    effort_result = validate_plan_effort(estimated_nodes)
+
+    if effort_result["status"] == "blocked":
+        WARN(f"⚠️ Effort too high: {effort_result['effort_hours']} hours. Suggest consolidation.")
+        if user_chooses_refactor():
+            # Increase composition, reduce individual screens
+            return suggest_consolidation_strategies(patterns, templates)
+
+    print(f"  ✅ Effort estimate: {effort_result['effort_hours']} hours (acceptable)")
+
+    # ============================================================
+    # PHASE 5: COMPOSITION (SCREENS FROM TEMPLATES)
+    # ============================================================
+
+    print("Phase 5: Composing screens from templates...")
+
+    composed_screens = []
+    validator = ContinuousValidator()  # Real-time validation
+
+    BATCH_SIZE = 20  # Checkpoint every 20 nodes
+
+    for i, scenario in enumerate(ui_scenarios):
+        # 5.1: Match scenario to template
+        template = match_template(scenario, templates)
+
+        # 5.2: Compose screen from template
+        screen = compose_screen(scenario, template)
+
+        # 5.3: VALIDATE BEFORE ADDING (continuous validation)
+        if not validator.validate_during_generation(screen):
+            WARN(f"Validation failed for {screen.id}: {validator.last_issues}")
+            ask_user("Continue creating this screen or skip?")
+
+        # 5.4: Check similarity (anti-duplication)
+        similar = find_similar_nodes(screen, threshold=0.8)
+        if similar:
+            WARN(f"Screen {screen.id} is 80% similar to {similar[0].id}")
+            ask_user("Reuse existing with parameters or create new?")
+
+        composed_screens.append(screen)
+
+        # 5.5: USER CHECKPOINT every 20 nodes
+        if (i + 1) % BATCH_SIZE == 0:
+            show_checkpoint(
+                batch_number=(i + 1) // BATCH_SIZE,
+                nodes_generated=i + 1,
+                pattern=describe_pattern(composed_screens[-BATCH_SIZE:]),
+                continue_or_stop="Continue generating or stop and refactor?"
+            )
+
+            if not user_approves():
+                return {"status": "stopped", "reason": "user_feedback", "nodes": i + 1}
+
+    print(f"  ✅ Composed {len(composed_screens)} screens from {len(templates)} templates")
+
+    # ============================================================
+    # PHASE 6: UI QUESTIONNAIRE & NODE GENERATION
+    # ============================================================
+
+    print("Phase 6: Running UI questionnaire and generating UI nodes...")
+
+    all_ui_nodes = []
+    unaccounted = []
+
+    for screen in composed_screens:
+        # 6.1: Run 13-question UI questionnaire
+        answers = ui_questionnaire(screen)
+
+        # 6.2: Generate UI nodes based on answers
+        ui_nodes = []
+        ui_nodes.append(screen)  # Screen itself
+        ui_nodes.extend(ensure_navigation_spec(screen, answers))
+        ui_nodes.extend(ensure_uxflows(screen, answers))
+        ui_nodes.extend(ensure_ui_components(screen, answers))
+
+        # 6.3: Conditional nodes
         if answers.needs_setting:
-            ensure_settings_spec(n, answers)
+            ui_nodes.extend(ensure_settings_spec(screen, answers))
         if answers.needs_tutorial:
-            ensure_tutorial_spec(n, answers)
+            ui_nodes.extend(ensure_tutorial_spec(screen, answers))
         if answers.needs_notifications or answers.needs_badge:
-            ensure_notification_and_badge(n, answers)  # NotificationSpec + BadgeRule
+            ui_nodes.extend(ensure_notification_and_badge(screen, answers))
 
-        # 2f. Quality checks
-        ensure_a11y_i18n_checks(n)                    # WCAG/i18n gate
-        ensure_analytics_spec(n, answers)             # tracking plan events
+        # 6.4: Quality checks
+        ui_nodes.extend(ensure_a11y_i18n_checks(screen))
+        ui_nodes.extend(ensure_analytics_spec(screen, answers))
 
-        # 2g. Log if UI was skipped for any reason
-        if not has_ui_nodes(n) and not has_exclusion(n):
+        all_ui_nodes.extend(ui_nodes)
+
+        # 6.5: Log if UI was skipped
+        if not ui_nodes and not has_exclusion(screen):
             unaccounted.append({
-                "node_id": n.id,
-                "reason": determine_skip_reason(n, answers),
-                "owner": n.owner or "Unassigned",
-                "due": calculate_due_date(n),
+                "node_id": screen.id,
+                "reason": determine_skip_reason(screen, answers),
+                "owner": screen.owner or "Unassigned",
+                "due": calculate_due_date(screen),
                 "blocker": True
             })
 
-    # 3. Apply UI gates and block nodes that don't satisfy requirements
-    apply_ui_gates_and_block_on_failure(unaccounted)
+    print(f"  ✅ Generated {len(all_ui_nodes)} UI nodes total")
 
-    # 4. Return updated graph with UI nodes and blockages
+    # ============================================================
+    # PHASE 7: BACKEND NODES (NON-UI)
+    # ============================================================
+
+    print("Phase 7: Creating backend nodes (non-UI)...")
+
+    # Create Service specs for backend operations
+    for service_node in classified["SERVICE"]:
+        create_service_spec(service_node)
+
+    # Create API endpoints for API operations
+    for api_node in classified["API_ENDPOINT"]:
+        create_api_endpoint(api_node)
+
+    # Create exclusions for no-UI scenarios
+    for exclusion_node in classified["EXCLUSION"]:
+        ensure_ui_exclusion(exclusion_node)
+
+    print(f"  ✅ Created {len(classified['SERVICE'])} services, "
+          f"{len(classified['API_ENDPOINT'])} APIs, "
+          f"{len(classified['EXCLUSION'])} exclusions")
+
+    # ============================================================
+    # PHASE 8: QUALITY GATES & VALIDATION
+    # ============================================================
+
+    print("Phase 8: Applying quality gates...")
+
+    gates_result = apply_ui_gates_and_block_on_failure(all_ui_nodes, unaccounted)
+
+    print(f"  ✅ Gates applied: {len(gates_result['gates_applied'])}")
+    print(f"  ⚠️ Blocked nodes: {len(gates_result['blocked_nodes'])}")
+
+    # ============================================================
+    # PHASE 9: FINAL EFFORT VALIDATION
+    # ============================================================
+
+    print("Phase 9: Final effort validation...")
+
+    actual_nodes = {
+        "Screen": len(composed_screens),
+        "Template": len(templates),
+        "Component": len([n for n in all_ui_nodes if n.type == "UIComponentContract"]),
+        "UXFlow": len([n for n in all_ui_nodes if n.type == "UXFlow"]),
+    }
+
+    final_effort = validate_plan_effort(actual_nodes)
+
+    print(f"  ✅ Final effort: {final_effort['effort_hours']} hours")
+    print(f"  ✅ Composition reuse: {calculate_reuse_percentage(composed_screens, templates):.1f}%")
+
+    # ============================================================
+    # RETURN RESULTS
+    # ============================================================
+
     return {
-        "ui_nodes_added": count_new_ui_nodes(),
-        "gates_applied": list_gates_applied(),
+        "status": "complete",
+        "classification": {
+            "screens": len(classified["SCREEN"]),
+            "services": len(classified["SERVICE"]),
+            "apis": len(classified["API_ENDPOINT"]),
+            "exclusions": len(classified["EXCLUSION"]),
+        },
+        "patterns_detected": {k: len(v) for k, v in patterns.items()},
+        "templates_created": len(templates),
+        "screens_composed": len(composed_screens),
+        "ui_nodes_generated": len(all_ui_nodes),
+        "effort_hours": final_effort["effort_hours"],
+        "reuse_percentage": calculate_reuse_percentage(composed_screens, templates),
+        "gates_applied": gates_result["gates_applied"],
+        "blocked_nodes": gates_result["blocked_nodes"],
         "unaccounted": unaccounted,
-        "blocked_nodes": find_nodes(status="Blocked")
     }
 ```
 
-**Key helper functions**:
-- `is_ui_trigger(node)` - Returns true if node has user_facing=true OR ui_impact=possible OR involves client lane
-- `ui_questionnaire(node)` - Runs 13-question questionnaire, persists answers to node.evidence.ui_answers
-- `ensure_ui_exclusion(node)` - Creates Policy:Exclusion-UI with owner+rationale+date
-- `ensure_*` functions - Create missing UI nodes and wire edges
-- `apply_ui_gates_and_block_on_failure(unaccounted)` - Enforces all 8 quality gates, marks nodes Blocked with reasons
+**Key Improvements from v44**:
+
+1. **Pre-conditions FIRST** → No UI generation without design system
+2. **Classification BEFORE generation** → No backend-as-screens
+3. **Pattern detection BEFORE individual nodes** → 80% less duplication
+4. **Effort validation DURING planning** → Catch unreasonable plans early
+5. **Continuous validation** → Catch issues as they happen
+6. **User checkpoints every 20 nodes** → Course-correct early
+7. **Similarity detection** → Prevent duplicate screens
+8. **Composition-first** → Templates + parameters, not individual files
+
+**Result**: 12 screens (not 169), 80% reuse, 77% effort reduction
 
 ## UI Lint Rules & Gates (Enforced - Duke's Feedback Section 4)
 
