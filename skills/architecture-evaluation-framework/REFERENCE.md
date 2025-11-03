@@ -419,6 +419,103 @@ ARCH_EVAL_MEMORY_LIMIT=2048  # MB
 ARCH_EVAL_TIMEOUT=600        # seconds
 ```
 
+## Architectural Decision Records (ADRs)
+
+### Using UI Architecture ADRs
+
+**Location**: `plan-fixed/nodes/ADR/adr-ui-*.json`
+**Count**: 7 ADR nodes
+**Format**: JSON (ADR schema from recursive-planning-spec/FORMS.md)
+**Links**: Each ADR links to its Architecture node via `depends_on`
+
+#### For Developers
+
+When implementing UI features, consult the relevant ADR:
+
+**1. State Management Questions?**
+→ Read: `adr-ui-state-management-tanstack-query.json`
+- Why TanStack Query instead of Redux?
+- When to use TanStack Query vs Zustand?
+- What are the trade-offs?
+
+**2. Responsive Design Questions?**
+→ Read: `adr-ui-responsive-mobile-first.json`
+- Why mobile-first instead of desktop-first?
+- What breakpoints to use?
+- How to handle desktop features?
+
+**3. Internationalization Questions?**
+→ Read: `adr-ui-i18n-icu-messageformat.json`
+- Why ICU MessageFormat instead of simple strings?
+- How to handle pluralization?
+- What about gender/case support?
+
+**4. Navigation Questions?**
+→ Read: `adr-ui-navigation-stack-based.json`
+- Why stack-based instead of tabs?
+- How to handle deep linking?
+- What about modals?
+
+**5. Accessibility Questions?**
+→ Read: `adr-ui-accessibility-wcag-aa.json`
+- Why WCAG AA instead of AAA?
+- What contrast ratios are required?
+- What about keyboard navigation?
+
+**6. Analytics Questions?**
+→ Read: `adr-ui-analytics-10-percent-sampling.json`
+- Why 10% sampling instead of 100%?
+- What about error tracking?
+- Privacy implications?
+
+**7. Onboarding Questions?**
+→ Read: `adr-ui-onboarding-progressive-disclosure.json`
+- Why progressive disclosure instead of forced tours?
+- How to balance learning vs flow?
+- What about tooltips?
+
+#### For Architects
+
+**Reviewing or changing decisions**:
+
+Each ADR documents:
+- **Context**: The problem that needed solving
+- **Options**: What alternatives were considered (4 per decision)
+- **Decision**: What was chosen
+- **Rationale**: WHY it was chosen (quantified benefits)
+- **Consequences**: Positive, negative, and risks
+
+**If circumstances change**:
+
+1. **Review the ADR**: Understand the original rationale
+2. **Check if context changed**: Are the assumptions still valid?
+3. **Evaluate consequences**: Did predicted outcomes occur?
+4. **Document new ADR**: If changing, create new ADR with updated decision
+5. **Link ADRs**: Reference the superseded ADR
+
+**Example workflow**:
+```bash
+# Read current ADR
+cat plan-fixed/nodes/ADR/adr-ui-state-management-tanstack-query.json | jq
+
+# If changing decision, create new ADR:
+# adr:ui-state-management-tanstack-query-v2.json
+# Reference the original in "supersedes" field
+```
+
+#### For Product Managers
+
+**Understanding trade-offs**:
+
+Each ADR lists consequences in three categories:
+- **Positive** = Benefits we gain
+- **Negative** = Trade-offs we accept
+- **Risks** = Things to watch out for
+
+See `docs/_reference/adr/ui-adrs-usage-guide.md` for complete usage documentation.
+
+---
+
 ## Return Types
 
 ### EvaluationResults
