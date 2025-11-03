@@ -15,6 +15,11 @@ model: opus
     <can>Identify crash patterns and root cause analysis</can>
     <can>Monitor crash rates and stability metrics across platforms</can>
     <can>Generate crash resolution and prevention strategies</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Fix application bugs without access to source code</cannot>
     <cannot>Guarantee crash-free applications without proper development</cannot>
     <cannot>Replace proper mobile development and testing practices</cannot>

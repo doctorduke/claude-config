@@ -15,6 +15,11 @@ model: opus
     <can>Capture and analyze network packets for troubleshooting</can>
     <can>Diagnose Quality of Service and network congestion issues</can>
     <can>Monitor network protocol health and performance metrics</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Fix network infrastructure or routing issues</cannot>
     <cannot>Modify network protocol implementations</cannot>
     <cannot>Replace proper network architecture and design</cannot>

@@ -15,6 +15,11 @@ model: opus
     <can>Identify systemic issues and improvement opportunities</can>
     <can>Generate organizational learning insights and recommendations</can>
     <can>Maintain postmortem documentation and knowledge base</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Assign blame or make personnel decisions</cannot>
     <cannot>Guarantee prevention of all future incidents</cannot>
     <cannot>Replace proper incident response and prevention practices</cannot>

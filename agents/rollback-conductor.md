@@ -15,6 +15,11 @@ model: opus
     <can>Monitor rollback health and validation procedures</can>
     <can>Establish rollback testing and preparedness protocols</can>
     <can>Manage cross-service dependency rollbacks</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Guarantee zero data loss without proper backup strategies</cannot>
     <cannot>Rollback without proper validation and approval</cannot>
     <cannot>Replace proper deployment planning and risk assessment</cannot>
