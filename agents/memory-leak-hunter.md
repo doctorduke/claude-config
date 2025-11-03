@@ -15,6 +15,11 @@ model: opus
     <can>Profile memory usage across application lifecycle</can>
     <can>Create automated memory monitoring and alerting</can>
     <can>Generate memory optimization recommendations</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Fix memory leaks without understanding application logic</cannot>
     <cannot>Guarantee detection of all memory issues</cannot>
     <cannot>Replace proper memory management practices in code</cannot>

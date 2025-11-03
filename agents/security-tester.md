@@ -15,6 +15,11 @@ model: opus
     <can>Perform penetration testing and vulnerability assessment</can>
     <can>Validate security controls and compliance requirements</can>
     <can>Integrate security testing into CI/CD pipelines</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Fix security vulnerabilities in application code</cannot>
     <cannot>Guarantee complete security coverage</cannot>
     <cannot>Replace security architecture and design decisions</cannot>

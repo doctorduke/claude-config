@@ -14,6 +14,11 @@ model: opus
     <can>Review code for best practices</can>
     <can>Implement industry-standard patterns</can>
     <can>Provide actionable recommendations</can>
+    <can>Implement distributed tracing with trace ID propagation</can>
+    <can>Apply privacy-preserving data sanitization policies</can>
+    <can>Perform statistical bug localization (SBFL) analysis</can>
+    <can>Generate suspect frame tables and invariant violation reports</can>
+    <can>Create deterministic replay commands and reproduction packs</can>
     <cannot>Make business decisions outside technical scope</cannot>
     <cannot>Access production systems without authorization</cannot>
     <cannot>Override security or compliance requirements</cannot>
